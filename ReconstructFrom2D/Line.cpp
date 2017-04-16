@@ -10,8 +10,16 @@ Line::Line()
 
 Line::Line(int _p1, int _p2)
 {
-	p1_ = _p1;
-	p2_ = _p2;
+	if (_p1 < _p2)
+	{
+		p1_ = _p1;
+		p2_ = _p2;
+	}
+	else
+	{
+		p1_ = _p2;
+		p2_ = _p1;
+	}
 }
 
 Line::Line(const Line & another)

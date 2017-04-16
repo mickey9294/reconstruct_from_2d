@@ -24,7 +24,7 @@ MPFVertex::MPFVertex(const MPFVertex & another)
 	circuit_.resize(weight_);
 	int idx = 0;
 	for (std::vector<int>::const_iterator it = another.const_circuit_begin();
-		it != another.const_circuit_end; ++it)
+		it != another.const_circuit_end(); ++it)
 		circuit_[idx++] = *it;
 }
 

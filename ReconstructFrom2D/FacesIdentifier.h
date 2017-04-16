@@ -11,7 +11,7 @@ class FacesIdentifier
 {
 public:
 	FacesIdentifier();
-	FacesIdentifier(std::list<QPointF> vertices, std::list<Line> edges);
+	FacesIdentifier(const std::list<QPointF> &vertices, const std::list<Line> &edges);
 	~FacesIdentifier();
 
 	void identify_all_faces(std::vector<std::vector<int>> &face_circuits);

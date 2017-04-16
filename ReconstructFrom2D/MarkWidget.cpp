@@ -6,6 +6,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	undoButton_.reset(new QPushButton("Undo"));
 	loadButton_.reset(new QPushButton("Load Images"));
 	resetButton_.reset(new QPushButton("Reset"));
+	detectPlanesButton_.reset(new QPushButton("Detect Planes"));
 	displayWidget_.reset(new MarkGraphicsScene());
 	imagesListWidget_.reset(new QListWidget());
 	imagesListWidget_->setFixedWidth(250);
@@ -28,6 +29,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 
 	QVBoxLayout * display_layout = new QVBoxLayout();
 	QHBoxLayout * undo_layout = new QHBoxLayout();
+	undo_layout->addWidget(detectPlanesButton_.get());
 	undo_layout->addStretch(0.5);
 	undo_layout->addWidget(resetButton_.get());
 	undo_layout->addWidget(undoButton_.get());
@@ -46,6 +48,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(undoButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(undo()));
 	connect(imagesListWidget_.get(), SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(set_mark_image(QListWidgetItem *)));
 	connect(this, SIGNAL(set_image(QString)), displayWidget_.get(), SLOT(set_image(QString)));
+	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
 }
 
 MarkWidget::~MarkWidget()
@@ -110,4 +113,12 @@ void MarkWidget::set_mark_image(QListWidgetItem * item)
 	int id = title.section(' ', 1, 1).toInt() - 1;
 	QString path = images_path_list_[id];
 	emit(set_image(path));
+}
+
+void MarkWidget::detect_planes()
+{
+	std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
+	std::vector<std::vector<int>>face_circuits;
+	faces_detector->identify_all_faces(face_circuits);
+	displayWidget_->set_faces(face_circuits);
 }

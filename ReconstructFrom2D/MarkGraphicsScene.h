@@ -9,10 +9,12 @@
 #include <QLine>
 #include <QApplication>
 #include <QStyle>
+#include <QVector>
 #include <QMouseEvent>
 
 #include <memory>
 #include <iostream>
+#include <time.h>
 
 #include "Line.h"
 
@@ -24,10 +26,14 @@ public:
 	MarkGraphicsScene(QWidget *parent = 0);
 	~MarkGraphicsScene();
 
+	std::list<QPointF> & get_vertices();
+	std::list<Line> & get_edges();
+
 	public slots:
 	void undo();
 	void reset();
 	void set_image(QString image_path);
+	void set_faces(const std::vector<std::vector<int>> &face_circuits);
 
 signals:
 	void resize_main_window(int dw, int dh);
@@ -57,10 +63,14 @@ private:
 	std::shared_ptr<QPointF> vertex_;
 	QGraphicsEllipseItem * vertex_item_;
 
+	QGraphicsTextItem *number_item_;
+
 	std::list<Line> line_list_;
 	std::list<QGraphicsLineItem *> line_item_stack_;
 	std::list<QPointF> vertex_list_;
 	std::list<QGraphicsEllipseItem *> vertex_item_stack_;
+	std::list<QGraphicsPolygonItem *> face_item_stack_;
+	std::list<QGraphicsTextItem *> number_item_stack_;
 	std::list<int> mode_stack_;
 
 	//void makeItemsControllable(bool areControllable);

@@ -6,7 +6,7 @@ FacesIdentifier::FacesIdentifier()
 {
 }
 
-FacesIdentifier::FacesIdentifier(std::list<QPointF> vertices, std::list<Line> edges)
+FacesIdentifier::FacesIdentifier(const std::list<QPointF> &vertices, const std::list<Line> &edges)
 {
 	sketch_graph_.reset(new SketchGraph(vertices, edges));
 }
@@ -49,12 +49,12 @@ void FacesIdentifier::generate_min_potential_faces(std::vector<std::vector<int>>
 	int index = 0;
 	std::vector<bool> label(num_vertices, false);
 	std::vector<int> path(num_vertices);
-	std::vector<std::vector<int>> circuits;
+	//std::vector<std::vector<int>> circuits;
 
 	for (int i = 0; i < num_vertices - 1; i++)
 	{
 		int start = i;
-		circuit(i, start, index, path, label, circuits);
+		circuit(i, start, index, path, label, face_circuits);
 		sketch_graph_->remove_vertex_in_adjacency_list(i);
 	}
 
@@ -78,6 +78,8 @@ int FacesIdentifier::find_max_weight_clique(MPFGraph & mpf_graph, std::list<std:
 
 	int ret = find_max_weight_clique(mpf_graph, level_id, current_level, -1, num_vertices - 1,
 		current_clique, ns, cmw, cmwc);
+
+	return cmwc.size();
 }
 
 
@@ -216,7 +218,7 @@ int FacesIdentifier::find_max_weight_clique(MPFGraph & mpf_graph, int level_id, 
 
 		std::vector<int> next_level;
 		int first_vert = level[first];
-		for (int i = first + 1; i < last; i++)
+		for (int i = first + 1; i <= last; i++)
 		{
 			if (mpf_graph.are_adjacent(first_vert, level[i]))
 				next_level.push_back(level[i]);
@@ -239,6 +241,7 @@ int FacesIdentifier::find_max_weight_clique(MPFGraph & mpf_graph, int level_id, 
 		{
 			cmw = ccw;
 			ns = 1;
+			cmwc.clear();
 			cmwc.push_back(current_clique);
 		}
 		else if (ccw == cmw)

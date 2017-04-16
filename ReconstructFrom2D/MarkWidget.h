@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "MarkGraphicsScene.h"
+#include "FacesIdentifier.h"
 
 class MarkWidget : public QWidget
 {
@@ -24,6 +25,7 @@ public:
 	void reset_display();
 	void load_images();
 	void set_mark_image(QListWidgetItem *item);
+	void detect_planes();
 
 signals:
 	void set_image(QString image_path);
@@ -33,6 +35,7 @@ private:
 	std::shared_ptr<QPushButton> undoButton_;
 	std::shared_ptr<QPushButton> loadButton_;
 	std::shared_ptr<QPushButton> resetButton_;
+	std::shared_ptr<QPushButton> detectPlanesButton_;
 	std::shared_ptr<QListWidget> imagesListWidget_;
 
 	QStringList images_path_list_;

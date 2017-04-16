@@ -6,12 +6,12 @@ SketchGraph::SketchGraph()
 {
 }
 
-SketchGraph::SketchGraph(std::list<QPointF> vertices, std::list<Line> edges)
+SketchGraph::SketchGraph(const std::list<QPointF> &vertices, const std::list<Line> &edges)
 {
 	int num_vertices = vertices.size();
 	vertices_.resize(num_vertices);
 	int vert_idx = 0;
-	for (std::list<QPointF>::iterator vert_it = vertices.begin(); vert_it != vertices.end(); ++vert_it, ++vert_idx)
+	for (std::list<QPointF>::const_iterator vert_it = vertices.begin(); vert_it != vertices.end(); ++vert_it, ++vert_idx)
 	{
 		vertices_[vert_idx][0] = vert_it->x();
 		vertices_[vert_idx][1] = vert_it->y();
@@ -22,7 +22,7 @@ SketchGraph::SketchGraph(std::list<QPointF> vertices, std::list<Line> edges)
 	adjacency_mat_.resize(num_vertices, num_vertices);
 	adjacency_mat_.setZero();
 	int edge_idx = 0;
-	for (std::list<Line>::iterator edge_it = edges.begin(); edge_it != edges.end(); ++edge_it, ++edge_idx)
+	for (std::list<Line>::const_iterator edge_it = edges.begin(); edge_it != edges.end(); ++edge_it, ++edge_idx)
 	{
 		int p1 = edge_it->p1();
 		int p2 = edge_it->p2();
@@ -180,10 +180,10 @@ bool SketchGraph::edges_intersect(int v11, int v12, int v21, int v22)
 	Eigen::Vector2f &q2 = vertices_[v22];
 
 	/* Check wheter two lines are parallel */
-	Eigen::Vector2f v1 = p1 - q1;
-	Eigen::Vector2f v2 = p2 - q2;
-	if (v1.cross(v2).norm() < 1e-3)
-		return false;
+	//Eigen::Vector2f v1 = p1 - q1;
+	//Eigen::Vector2f v2 = p2 - q2;
+	//if (v1.cross(v2).norm() < 1e-3)
+	//	return false;
 
 	/* Check whether two line segments are end to end */
 	if (v11 == v21 || v11 == v22 || v12 == v21 || v12 == v22)

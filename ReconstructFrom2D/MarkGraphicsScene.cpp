@@ -17,11 +17,36 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 
 	vertex_.reset(new QPointF());
 
+	srand(time(NULL));
+
+	//QPolygonF poly;
+	//poly << QPointF(10, 10) << QPointF(10, 50) << QPointF(30, 70 )<< QPointF(60, 50) << QPointF(50, 10);
+	//QGraphicsPolygonItem * item = new QGraphicsPolygonItem(poly);
+	//QBrush brush;
+	//brush.setColor(Qt::red);
+	//brush.setStyle(Qt::SolidPattern);
+	//QPen pen(Qt::green);
+	//QPainter painter;
+	//painter.setBrush(brush);
+	//painter.drawPolygon(poly);
+
+	//graphics_scene_->addPolygon(poly, pen, brush);
+
 	this->setScene(graphics_scene_.get());
 }
 
 MarkGraphicsScene::~MarkGraphicsScene()
 {
+}
+
+std::list<QPointF>& MarkGraphicsScene::get_vertices()
+{
+	return vertex_list_;
+}
+
+std::list<Line>& MarkGraphicsScene::get_edges()
+{
+	return line_list_;
 }
 
 void MarkGraphicsScene::set_image(QString image_path)
@@ -55,6 +80,37 @@ void MarkGraphicsScene::set_image(QString image_path)
 	}
 }
 
+void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circuits)
+{
+	for (std::vector<std::vector<int>>::const_iterator face_it = face_circuits.begin();
+		face_it != face_circuits.end(); ++face_it)
+	{
+		QVector<QPointF> face_vertices;
+		face_vertices.reserve(face_it->size());
+		std::vector<QPointF> verts_vec(vertex_list_.begin(), vertex_list_.end());
+		for (std::vector<int>::const_iterator vert_it = face_it->begin(); vert_it != face_it->end(); vert_it++)
+		{
+			face_vertices.push_back(verts_vec[*vert_it]);
+		}
+		//face_vertices.push_back(verts_vec.front());
+
+		QPolygonF face(face_vertices);
+		int r = rand() % 255;
+		int g = rand() % 255;
+		int b = rand() % 255;
+		QColor face_color(r, g, b, 158);
+		QBrush face_brush;
+		face_brush.setColor(face_color);
+		face_brush.setStyle(Qt::SolidPattern);
+		QPen face_pen = Qt::NoPen;
+		
+		QGraphicsPolygonItem * face_item = graphics_scene_->addPolygon(face, face_pen, face_brush);
+		face_item_stack_.push_back(face_item);
+	}
+
+	update();
+}
+
 void MarkGraphicsScene::reset()
 {
 	while (!line_item_stack_.empty())
@@ -67,6 +123,18 @@ void MarkGraphicsScene::reset()
 	{
 		QGraphicsEllipseItem *item = vertex_item_stack_.back();
 		vertex_item_stack_.pop_back();
+		graphics_scene_->removeItem(item);
+	}
+	while (!face_item_stack_.empty())
+	{
+		QGraphicsPolygonItem *item = face_item_stack_.back();
+		face_item_stack_.pop_back();
+		graphics_scene_->removeItem(item);
+	}
+	while (!number_item_stack_.empty())
+	{
+		QGraphicsTextItem *item = number_item_stack_.back();
+		number_item_stack_.pop_back();
 		graphics_scene_->removeItem(item);
 	}
 	line_list_.clear();
@@ -91,7 +159,13 @@ void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 		mode_stack_.push_back(0);
 		vertex_->setX(event->pos().x());
 		vertex_->setY(event->pos().y());
-		vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 1.5, vertex_->y() - 1.5, 3, 3, vertex_pen_);
+		vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 2, vertex_->y() - 2, 4, 4, vertex_pen_);
+
+		QFont font;
+		font.setPointSize(12);
+		font.setBold(true);
+		number_item_ = graphics_scene_->addText(QString::number(vertex_list_.size()), font);
+		number_item_->setPos(event->pos());
 	}
 };
 
@@ -130,6 +204,7 @@ void MarkGraphicsScene::mouseReleaseEvent(QMouseEvent *event) {
 		/*if (vertex_item_stack_.size() >= STACK_SIZE)
 			vertex_item_stack_.pop_front();*/
 		vertex_item_stack_.push_back(vertex_item_);
+		number_item_stack_.push_back(number_item_);
 	}
 }
 
@@ -176,6 +251,12 @@ void MarkGraphicsScene::undo()
 			vertex_item_stack_.pop_back();
 			graphics_scene_->removeItem(last_vertex_item);
 			vertex_list_.pop_back();
+		}
+		if (!number_item_stack_.empty())
+		{
+			QGraphicsTextItem * last_number_item = number_item_stack_.back();
+			number_item_stack_.pop_back();
+			graphics_scene_->removeItem(last_number_item);
 		}
 	}
 

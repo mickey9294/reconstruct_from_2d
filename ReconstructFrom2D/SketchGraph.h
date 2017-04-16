@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <Eigen\Core>
+#include <Eigen\Dense>
 
 #include "Line.h"
 
@@ -14,7 +15,7 @@ class SketchGraph
 {
 public:
 	SketchGraph();
-	SketchGraph(std::list<QPointF> vertices, std::list<Line> edges);
+	SketchGraph(const std::list<QPointF> &vertices, const std::list<Line> &edges);
 	SketchGraph(const SketchGraph &another);
 	~SketchGraph();
 

@@ -42,6 +42,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -70,6 +71,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ArtecProcessor.cpp" />
+    <ClCompile Include="ConstraintsGenerator.cpp" />
     <ClCompile Include="FacesIdentifier.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_MarkGraphicsScene.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -115,6 +117,7 @@
     <ClCompile Include="MPFVertex.cpp" />
     <ClCompile Include="MyGLWidget.cpp" />
     <ClCompile Include="PCModel.cpp" />
+    <ClCompile Include="PlanarFace.cpp" />
     <ClCompile Include="PlaneCalibApp.cpp" />
     <ClCompile Include="ReconstructFrom2D.cpp" />
     <ClCompile Include="Reconstructor.cpp" />
@@ -155,10 +158,12 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DWIN64 -DQT_DLL -DQT_NO_DEBUG -DNDEBUG -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DGLOG_NO_ABBREVIATED_SEVERITIES "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtWidgets" "-ID:\Libraries\opencv\build\include" "-ID:\Libraries\opencv\build\include\opencv2" "-ID:\Libraries\SuiteSparse\include\suitesparse" "-ID:\Libraries\SuiteSparse\include" "-ID:\Projects\planecalib-master\code\planecalib_ui\.." "-ID:\Projects\planecalib-master\build\3rdparty\usr\include" "-ID:\Libraries\Eigen\include\eigen3" "-ID:\Projects\planecalib-master\code\planecalib\.." "-ID:\Projects\planecalib-master\build\code\planecalib" "-ID:\Libraries\matio\include" "-ID:\Libraries\glog\include" "-ID:\Libraries\Boost\vc140\include\boost-1_61" "-ID:\Libraries\Ceres\include" "-ID:\Libraries\PCL\vc140\include\pcl-1.8" "-ID:\Libraries\flann\vc140\include" "-ID:\ProgrammingTools\Matlab\R2016b\extern\include" "-ID:\Libraries\Artec 3D Scanning SDK\include"</Command>
     </CustomBuild>
+    <ClInclude Include="ConstraintsGenerator.h" />
     <ClInclude Include="FacesIdentifier.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="MPFGraph.h" />
     <ClInclude Include="MPFVertex.h" />
+    <ClInclude Include="PlanarFace.h" />
     <ClInclude Include="Seb-inl.h" />
     <ClInclude Include="Seb.h" />
     <ClInclude Include="Seb_configure.h" />

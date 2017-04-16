@@ -1,0 +1,59 @@
+#include "PlanarFace.h"
+
+
+
+PlanarFace::PlanarFace()
+{
+}
+
+PlanarFace::PlanarFace(int id, const std::vector<int>& circuit)
+{
+	id_ = id;
+	circuit_ = circuit;
+}
+
+PlanarFace::PlanarFace(const PlanarFace & another)
+{
+	id_ = another.id();
+	const std::vector<int> &circuit = another.const_circuit();
+	circuit_.resize(circuit.size());
+	for (int i = 0; i < circuit.size(); i++)
+		circuit_[i] = circuit[i];
+
+	normal_ = another.get_normal();
+}
+
+
+PlanarFace::~PlanarFace()
+{
+}
+
+void PlanarFace::set_id(int id)
+{
+	id_ = id;
+}
+
+int PlanarFace::id() const
+{
+	return id_;
+}
+
+void PlanarFace::set_normal(const Eigen::Vector3f & normal)
+{
+	normal_ = normal;
+}
+
+Eigen::Vector3f PlanarFace::get_normal() const
+{
+	return normal_;
+}
+
+const std::vector<int> & PlanarFace::const_circuit() const
+{
+	return circuit_;
+}
+
+std::vector<int>& PlanarFace::get_circuit()
+{
+	return circuit_;
+}

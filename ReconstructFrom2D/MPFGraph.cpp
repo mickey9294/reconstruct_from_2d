@@ -17,8 +17,15 @@ MPFGraph::MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vec
 		weights[i] = vertices_[i].weight();
 	}
 
-	std::sort(vertices_.begin(), vertices_.end(),
-		[&weights](size_t i, size_t j) {return weights[i] > weights[j];});
+	struct vertex_comperator
+	{
+		inline bool operator() (const MPFVertex &vert1, const MPFVertex &vert2)
+		{
+			return vert1.weight() > vert2.weight();
+		}
+	};
+
+	std::sort(vertices_.begin(), vertices_.end(), vertex_comperator());
 
 	for (int i = 0; i < num_vertices; i++)
 		vertices_[i].set_id(i);
@@ -32,6 +39,7 @@ MPFGraph::MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vec
 
 	adjacency_mat_.resize(num_vertices, num_vertices);
 	adjacency_mat_.setZero();
+	adjacency_list_.resize(num_vertices);
 	for (int i = 0; i < num_vertices; i++)
 	{
 		for (int j = i + 1; j < num_vertices; j++)
@@ -201,12 +209,24 @@ bool MPFGraph::coexist(MPFVertex & v1, MPFVertex & v2)
 
 void MPFGraph::get_common_edges(std::vector<int>& circuit1, std::vector<int>& circuit2, std::list<Line>& common)
 {
-	for (int i = 0; i < circuit1.size() - 1; i++)
+	int n1 = circuit1.size();
+	int n2 = circuit2.size();
+
+	for (int i = 0; i < n1; i++)
 	{
-		for (int j = 0; j < circuit2.size() - 1; j++)
+		int start1 = circuit1[i];
+		int end1 = circuit1[(i + 1) % n1];
+		if (start1 > end1)
+			std::swap(start1, end1);
+		for (int j = 0; j < n2; j++)
 		{
-			if (circuit1[i] == circuit2[j] && circuit1[i + 1] == circuit2[j + 1])
-				common.push_back(Line(circuit1[i], circuit1[i + 1]));
+			int start2 = circuit2[j];
+			int end2 = circuit2[(j + 1) % n2];
+			if (start2 > end2)
+				std::swap(start2, end2);
+
+			if (start1 == start2 && end1 == end2)
+				common.push_back(Line(start1, end1));
 		}
 	}
 }
