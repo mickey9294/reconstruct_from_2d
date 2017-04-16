@@ -10,6 +10,8 @@ public:
 	Line(const Line &another);
 	~Line();
 
+	Line &operator=(const Line &another);
+
 	int p1() const;
 	int p2() const;
 	void setP1(int p1);

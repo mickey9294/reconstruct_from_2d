@@ -10,6 +10,8 @@ public:
 	MPFVertex(const MPFVertex &another);
 	~MPFVertex();
 
+	MPFVertex & operator=(const MPFVertex &another);
+		
 	int id() const;
 	void set_id(int id);
 

@@ -33,6 +33,19 @@ MPFVertex::~MPFVertex()
 {
 }
 
+MPFVertex & MPFVertex::operator=(const MPFVertex & another)
+{
+	id_ = another.id();
+	weight_ = another.weight();
+	circuit_.resize(weight_);
+	int idx = 0;
+	for (std::vector<int>::const_iterator it = another.const_circuit_begin();
+		it != another.const_circuit_end(); ++it)
+		circuit_[idx++] = *it;
+
+	return *this;
+}
+
 int MPFVertex::id() const
 {
 	return id_;

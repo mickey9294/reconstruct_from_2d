@@ -96,6 +96,44 @@ MPFGraph::~MPFGraph()
 {
 }
 
+MPFGraph & MPFGraph::operator=(const MPFGraph & another)
+{
+	int num_vertices = another.num_vertices();
+	int num_points = another.num_points();
+
+	vertices_.reserve(num_vertices);
+	for (std::vector<MPFVertex>::const_iterator vert_it = another.const_vertices_begin();
+		vert_it != another.const_vertices_end(); ++vert_it)
+	{
+		vertices_.push_back(MPFVertex(*vert_it));
+	}
+
+	adjacency_list_.resize(num_vertices);
+	adjacency_mat_.resize(num_vertices, num_vertices);
+	adjacency_mat_.setZero();
+	int adj_idx = 0;
+	for (std::vector<std::list<int>>::const_iterator adj_it = another.const_adj_list_begin();
+		adj_it != another.const_adj_list_end(); ++adj_it, ++adj_idx)
+	{
+		for (std::list<int>::const_iterator jt = adj_it->begin(); jt != adj_it->end(); ++jt)
+		{
+			adjacency_list_[adj_idx].push_back(*jt);
+			adjacency_mat_(adj_idx, *jt) = 1;
+		}
+	}
+
+	points_.resize(num_points);
+	int p_idx = 0;
+	for (std::vector<Eigen::Vector2f>::const_iterator p_it = another.const_points_begin();
+		p_it != another.const_points_end(); ++p_it, ++p_idx)
+	{
+		points_[p_idx][0] = p_it->x();
+		points_[p_idx][1] = p_it->y();
+	}
+
+	return *this;
+}
+
 std::vector<MPFVertex>::const_iterator MPFGraph::const_vertices_begin() const
 {
 	return vertices_.begin();

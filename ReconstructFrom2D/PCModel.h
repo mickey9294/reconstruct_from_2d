@@ -35,6 +35,8 @@ public:
 	PCModel(const char *file_path);
 	~PCModel();
 
+	PCModel & operator=(const PCModel &pc);
+
 	int num_vertices() const { return vertices_.size(); }
 	std::string get_input_filepath() const;
 	Eigen::Vector3d get_vertex(int index);

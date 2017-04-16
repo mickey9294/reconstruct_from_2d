@@ -33,6 +33,14 @@ Line::~Line()
 {
 }
 
+Line & Line::operator=(const Line & another)
+{
+	p1_ = another.p1();
+	p2_ = another.p2();
+
+	return *this;
+}
+
 int Line::p1() const
 {
 	return p1_;

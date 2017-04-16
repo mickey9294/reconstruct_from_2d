@@ -75,6 +75,45 @@ SketchGraph::SketchGraph(const SketchGraph & another)
 
 SketchGraph::~SketchGraph()
 {
+
+}
+
+SketchGraph & SketchGraph::operator=(const SketchGraph & another)
+{
+	int num_vertices = another.num_vertices();
+	vertices_.resize(num_vertices);
+	int vert_idx = 0;
+	for (std::vector<Eigen::Vector2f>::const_iterator vert_it = another.const_vertices_begin();
+		vert_it != another.const_vertices_end(); ++vert_it, ++vert_idx)
+	{
+		vertices_[vert_idx][0] = vert_it->x();
+		vertices_[vert_idx][1] = vert_it->y();
+	}
+
+	adjacency_list_.resize(num_vertices);
+	adjacency_mat_.resize(num_vertices, num_vertices);
+	adjacency_mat_.setZero();
+	int adj_idx = 0;
+	for (std::vector<std::list<int>>::const_iterator adj_it = another.const_adjacency_list_begin();
+		adj_it != another.const_adjacency_list_end(); ++adj_it, ++adj_idx)
+	{
+		for (std::list<int>::const_iterator jt = adj_it->begin(); jt != adj_it->end(); jt++)
+		{
+			adjacency_list_[adj_idx].push_back(*jt);
+			adjacency_mat_(adj_idx, *jt) = 1;
+		}
+	}
+
+	edges_.resize(another.num_edges());
+	int edge_idx = 0;
+	for (std::vector<Line>::const_iterator edge_it = another.const_edges_begin();
+		edge_it != another.const_edges_end(); ++edge_it, ++edge_idx)
+	{
+		edges_[edge_idx].setP1(edge_it->p1());
+		edges_[edge_idx].setP2(edge_it->p2());
+	}
+
+	return *this;
 }
 
 std::vector<Eigen::Vector2f>::const_iterator SketchGraph::const_vertices_begin() const

@@ -19,6 +19,8 @@ public:
 	SketchGraph(const SketchGraph &another);
 	~SketchGraph();
 
+	SketchGraph & operator=(const SketchGraph &another);
+
 	std::vector<Eigen::Vector2f>::const_iterator const_vertices_begin() const;
 	std::vector<Eigen::Vector2f>::const_iterator const_vertices_end() const;
 	const std::vector<Eigen::Vector2f> & const_vertices();

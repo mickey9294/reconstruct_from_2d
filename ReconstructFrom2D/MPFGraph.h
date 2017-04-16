@@ -17,6 +17,8 @@ public:
 	MPFGraph(const MPFGraph &another);
 	~MPFGraph();
 
+	MPFGraph & operator=(const MPFGraph &another);
+
 	std::vector<MPFVertex>::const_iterator const_vertices_begin() const;
 	std::vector<MPFVertex>::const_iterator const_vertices_end() const;
 	std::vector<std::list<int>>::const_iterator const_adj_list_begin() const;

@@ -38,6 +38,26 @@ PCModel::PCModel(const char *file_path)
 
 PCModel::~PCModel()
 {
+	
+}
+
+PCModel & PCModel::operator=(const PCModel & pc)
+{
+	vertices_.reserve(pc.num_vertices());
+	normals_.reserve(pc.num_vertices());
+	for (std::vector<Eigen::Vector3d>::const_iterator vert_it = pc.vertices_const_begin();
+		vert_it != pc.vertices_const_end(); ++vert_it)
+		vertices_.push_back(*vert_it);
+
+	for (std::vector<Eigen::Vector3d>::const_iterator norm_it = pc.normals_const_begin();
+		norm_it != pc.vertices_const_end(); ++norm_it)
+		normals_.push_back(*norm_it);
+
+	radius_ = pc.get_radius();
+	centroid_ = pc.get_centroid();
+	input_filepath_ = pc.get_input_filepath();
+
+	return *this;
 }
 
 Eigen::Vector3d PCModel::get_centroid() const
