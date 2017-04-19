@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <list>
 
 #include <Eigen\Core>
 
@@ -12,6 +13,8 @@ public:
 	PlanarFace(const PlanarFace &another);
 	~PlanarFace();
 
+	PlanarFace &operator=(const PlanarFace &another);
+
 	void set_id(int id);
 	int id() const;
 
@@ -21,9 +24,14 @@ public:
 	const std::vector<int> &const_circuit() const;
 	std::vector<int> & get_circuit();
 
+	void add_edge(int line_id);
+	std::list<int> &get_edges();
+	const std::list<int> &const_edges() const;
+
 private:
 	int id_;
 	std::vector<int> circuit_;
 	Eigen::Vector3f normal_;
+	std::list<int> edges_list_;
 };
 

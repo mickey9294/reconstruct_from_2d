@@ -3,6 +3,8 @@
 MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	: QGraphicsView(parent)
 {
+	srand(time(NULL));
+
 	this->setRenderHints(QPainter::Antialiasing);
 	this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -15,9 +17,12 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	vertex_pen_.setWidth(3);
 	vertex_pen_.setColor(QColor(255, 0, 0));
 
-	vertex_.reset(new QPointF());
+	focus_pen_.setWidth(4);
+	focus_pen_.setColor(QColor(0, 255, 255));
 
-	srand(time(NULL));
+	parallel_pen_ = random_pen();
+
+	vertex_.reset(new QPointF());
 
 	//QPolygonF poly;
 	//poly << QPointF(10, 10) << QPointF(10, 50) << QPointF(30, 70 )<< QPointF(60, 50) << QPointF(50, 10);
@@ -31,6 +36,8 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	//painter.drawPolygon(poly);
 
 	//graphics_scene_->addPolygon(poly, pen, brush);
+	state_ = LabelSilhouette;
+	focused_line_id_ = -1;
 
 	this->setScene(graphics_scene_.get());
 }
@@ -47,6 +54,11 @@ std::list<QPointF>& MarkGraphicsScene::get_vertices()
 std::list<Line>& MarkGraphicsScene::get_edges()
 {
 	return line_list_;
+}
+
+std::list<std::vector<int>>& MarkGraphicsScene::get_parallel_groups()
+{
+	return parallel_lines_group_;
 }
 
 void MarkGraphicsScene::set_image(QString image_path)
@@ -76,7 +88,8 @@ void MarkGraphicsScene::set_image(QString image_path)
 		pixmap_item_->setPixmap(image_);
 		
 		graphics_scene_->addItem(pixmap_item_.get());
-		
+
+		reset();
 	}
 }
 
@@ -111,6 +124,47 @@ void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circ
 	update();
 }
 
+void MarkGraphicsScene::change_state()
+{
+	if (state_ == LabelSilhouette)
+	{
+		std::cout << "Change state. Now label parallel lines." << std::endl;
+		state_ = LabelParallel;
+
+		/* Compute U_ and A_ */
+		N_.resize(2, line_list_.size());
+		A_.resize(2, line_list_.size());
+		B_.resize(2, line_list_.size());
+		int idx = 0;
+		std::vector<QPointF> vertices_vec(vertex_list_.begin(), vertex_list_.end());
+		for (std::list<Line>::iterator it = line_list_.begin(); it != line_list_.end(); ++it, ++idx)
+		{
+			QPointF &v1 = vertices_vec[it->p1()];
+			QPointF &v2 = vertices_vec[it->p2()];
+
+			Eigen::Vector2f u;
+			u[0] = v2.x() - v1.x();
+			u[1] = v2.y() - v1.y();
+			u.normalize();
+
+			N_.block<2, 1>(0, idx) = u;
+			A_.block<2, 1>(0, idx) = Eigen::Vector2f(v1.x(), v1.y());
+			B_.block<2, 1>(0, idx) = Eigen::Vector2f(v2.x(), v2.y());
+		}
+		parallel_pen_ = random_pen();
+
+		line_chosen_before_.resize(line_list_.size(), false);
+	}
+	else if (state_ == LabelParallel)
+	{
+		std::cout << "Change state. Now label vertices or edges." << std::endl;
+		state_ = LabelSilhouette;
+		N_.resize(0, 0);
+		A_.resize(0, 0);
+		B_.resize(0, 0);
+	}
+}
+
 void MarkGraphicsScene::reset()
 {
 	while (!line_item_stack_.empty())
@@ -139,72 +193,179 @@ void MarkGraphicsScene::reset()
 	}
 	line_list_.clear();
 	vertex_list_.clear();
+
 	//line_item_stack_.clear();
 	//vertex_item_stack_.clear();	
 	mode_stack_.clear();
 	perm_ = false;
+
+	parallel_lines_group_.clear();
+	std::fill(line_chosen_before_.begin(), line_chosen_before_.end(), false);
+	current_parallel_group_.clear();
+	
+	if (state_ == LabelParallel)
+		change_state();
 }
 
 void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 {
-	if (event->button() == Qt::RightButton)
+	if (state_ == LabelSilhouette)
 	{
-		mode_stack_.push_back(1);
-		perm_ = false;
-		line_.reset(new QLineF(event->pos(), event->pos()));
-		line_item_ = graphics_scene_->addLine(*line_, line_pen_);
-	}
-	else if (event->button() == Qt::LeftButton)
-	{
-		mode_stack_.push_back(0);
-		vertex_->setX(event->pos().x());
-		vertex_->setY(event->pos().y());
-		vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 2, vertex_->y() - 2, 4, 4, vertex_pen_);
+		if (event->button() == Qt::RightButton)
+		{
+			mode_stack_.push_back(1);
+			perm_ = false;
+			line_.reset(new QLineF(event->pos(), event->pos()));
+			line_item_ = graphics_scene_->addLine(*line_, line_pen_);
+		}
+		else if (event->button() == Qt::LeftButton)
+		{
+			mode_stack_.push_back(0);
+			vertex_->setX(event->pos().x());
+			vertex_->setY(event->pos().y());
+			vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 2, vertex_->y() - 2, 4, 4, vertex_pen_);
 
-		QFont font;
-		font.setPointSize(12);
-		font.setBold(true);
-		number_item_ = graphics_scene_->addText(QString::number(vertex_list_.size()), font);
-		number_item_->setPos(event->pos());
+			QFont font;
+			font.setPointSize(12);
+			font.setBold(true);
+			number_item_ = graphics_scene_->addText(QString::number(vertex_list_.size()), font);
+			number_item_->setPos(event->pos());
+		}
+	}
+	else if (state_ == LabelParallel)
+	{
+		if (event->button() == Qt::LeftButton)
+		{
+			if (focused_line_id_ >= 0)
+			{
+				if (!line_chosen_before_[focused_line_id_])
+				{
+					line_chosen_before_[focused_line_id_] = true;
+					line_item_->setPen(parallel_pen_);
+					current_parallel_group_.insert(focused_line_id_);
+				}
+				else
+				{
+					line_chosen_before_[focused_line_id_] = false;
+					line_item_->setPen(line_pen_);
+					current_parallel_group_.erase(focused_line_id_);
+				}
+				update();
+			}
+		}
+		else if (event->button() == Qt::MiddleButton)
+		{
+			if (!current_parallel_group_.empty())
+			{
+				std::vector<int> new_parallel_group(current_parallel_group_.size());
+				int idx = 0;
+				for (std::unordered_set<int>::iterator it = current_parallel_group_.begin();
+					it != current_parallel_group_.end(); ++it)
+				{
+					new_parallel_group[idx++] = *it;
+				}
+				parallel_lines_group_.push_back(new_parallel_group);
+
+				current_parallel_group_.clear();
+				parallel_pen_ = random_pen();
+			}
+		}
 	}
 };
 
 void MarkGraphicsScene::mouseMoveEvent(QMouseEvent * event)
 {
-	if (line_ && !perm_)
+	if (state_ == LabelSilhouette)
 	{
-		line_->setP2(event->pos());
-		line_item_->setLine(*line_);
-		update();
+		if (line_ && !perm_)
+		{
+			line_->setP2(event->pos());
+			line_item_->setLine(*line_);
+			update();
+		}
+	}
+	else if (state_ == LabelParallel)
+	{
+		int nearest_edge_id = -1;
+		float min_dist = std::numeric_limits<float>::max();
+		bool ret = find_nearest_edge(event->pos(), nearest_edge_id, min_dist);
+		if (ret)
+		{
+			if (focused_line_id_ != nearest_edge_id)
+			{
+				if(focused_line_id_ >= 0 && !line_chosen_before_[focused_line_id_])
+					line_item_->setPen(line_pen_);
+				focused_line_id_ = nearest_edge_id;
+			}
+			std::list<QGraphicsLineItem *>::iterator edge_it = line_item_stack_.begin();
+			std::advance(edge_it, nearest_edge_id);
+			line_item_ = *edge_it;
+
+			if (!line_chosen_before_[focused_line_id_])
+			{
+				line_item_->setPen(focus_pen_);
+				update();
+			}
+		}
+		else
+		{
+			if (focused_line_id_ >= 0 && !line_chosen_before_[focused_line_id_])
+			{
+				line_chosen_before_[focused_line_id_] = false;
+				focused_line_id_ = -1;
+				line_item_->setPen(line_pen_);
+				update();
+			}
+		}
 	}
 }
 
 void MarkGraphicsScene::mouseReleaseEvent(QMouseEvent *event) {
-	if (event->button() == Qt::RightButton)
+	if (state_ == LabelSilhouette)
 	{
-		QPointF real_p1, real_p2;
-		int real_p1_idx = find_nearest_vertex(line_->p1(), real_p1);
-		int real_p2_idx = find_nearest_vertex(line_->p2(), real_p2);
-		line_->setP1(real_p1);
-		line_->setP2(real_p2);
-		line_item_->setLine(*line_);
-		update();
+		if (event->button() == Qt::RightButton)
+		{
+			QPointF real_p1, real_p2;
+			int real_p1_idx = find_nearest_vertex(line_->p1(), real_p1);
+			int real_p2_idx = find_nearest_vertex(line_->p2(), real_p2);
+			if (real_p1_idx != real_p2_idx)
+			{
+				line_->setP1(real_p1);
+				line_->setP2(real_p2);
+				line_item_->setLine(*line_);
+				update();
 
-		perm_ = true;
-		//QLineF new_line(*line_);
-		line_list_.push_back(Line(real_p1_idx, real_p2_idx));
-		/*if (line_item_stack_.size() >= STACK_SIZE)
-			line_item_stack_.pop_front();*/
-		line_item_stack_.push_back(line_item_);
+				perm_ = true;
+				//QLineF new_line(*line_);
+				line_list_.push_back(Line(real_p1_idx, real_p2_idx));
+				/*if (line_item_stack_.size() >= STACK_SIZE)
+					line_item_stack_.pop_front();*/
+				line_item_stack_.push_back(line_item_);
+			}
+			else
+			{
+				graphics_scene_->removeItem(line_item_);
+				mode_stack_.pop_back();
+			}
+		}
+		else if (event->button() == Qt::LeftButton)
+		{
+			QPointF new_vertex(*vertex_);
+			vertex_list_.push_back(new_vertex);
+			/*if (vertex_item_stack_.size() >= STACK_SIZE)
+				vertex_item_stack_.pop_front();*/
+			vertex_item_stack_.push_back(vertex_item_);
+			number_item_stack_.push_back(number_item_);
+		}
 	}
-	else if (event->button() == Qt::LeftButton)
+}
+
+void MarkGraphicsScene::keyPressEvent(QKeyEvent * event)
+{
+	std::cout << event->key() << std::endl;
+	if (event->key() == Qt::Key_Return)
 	{
-		QPointF new_vertex(*vertex_);
-		vertex_list_.push_back(new_vertex);
-		/*if (vertex_item_stack_.size() >= STACK_SIZE)
-			vertex_item_stack_.pop_front();*/
-		vertex_item_stack_.push_back(vertex_item_);
-		number_item_stack_.push_back(number_item_);
+		change_state();
 	}
 }
 
@@ -227,38 +388,84 @@ int MarkGraphicsScene::find_nearest_vertex(const QPointF & point, QPointF &neare
 	return nearest_index;
 }
 
+bool MarkGraphicsScene::find_nearest_edge(const QPoint & point, int & nearest_edge_id, float & distance)
+{
+	if (line_list_.empty())
+		return false;
+
+	Eigen::Vector2f p((float)point.x(), (float)point.y());
+	Eigen::MatrixXf AP = A_.colwise() - p;
+
+	Eigen::MatrixXf d_vec = N_.array().rowwise() * ((AP.transpose() * N_).diagonal().transpose().array());
+	Eigen::VectorXf result = (AP - d_vec).colwise().norm();
+
+	distance = result.minCoeff(&nearest_edge_id);
+
+	float dist_threshold = 0.05 * this->height();
+	if (distance > dist_threshold)
+		return false;
+	//Eigen::Vector2f P1 = A_.col(nearest_edge_id);
+	//Eigen::Vector2f P2 = B_.col(nearest_edge_id);
+	//float end_dist = std::min((p - P1).norm(), (p - P2).norm());
+	//if (end_dist > dist_threshold)
+	//	return false;
+	return true;
+}
+
+QColor MarkGraphicsScene::random_color()
+{
+	int r = rand() % 255;
+	int g = rand() % 255;
+	int b = rand() % 255;
+	QColor color(r, g, b);
+
+	return color;
+}
+
+QPen MarkGraphicsScene::random_pen()
+{
+	QPen pen;
+	pen.setWidth(3);
+	pen.setColor(random_color());
+	
+	return pen;
+}
+
 void MarkGraphicsScene::undo()
 {
-	if (mode_stack_.empty())
-		return;
-	int last_mode = mode_stack_.back();
-	mode_stack_.pop_back();
-	if (last_mode == 1)
+	if (state_ == LabelSilhouette)
 	{
-		if (!line_item_stack_.empty())
+		if (mode_stack_.empty())
+			return;
+		int last_mode = mode_stack_.back();
+		mode_stack_.pop_back();
+		if (last_mode == 1)
 		{
-			QGraphicsLineItem *last_line_item = line_item_stack_.back();
-			line_item_stack_.pop_back();
-			graphics_scene_->removeItem(last_line_item);
-			line_list_.pop_back();
+			if (!line_item_stack_.empty())
+			{
+				QGraphicsLineItem *last_line_item = line_item_stack_.back();
+				line_item_stack_.pop_back();
+				graphics_scene_->removeItem(last_line_item);
+				line_list_.pop_back();
+			}
 		}
-	}
-	else if (last_mode == 0)
-	{
-		if (!vertex_item_stack_.empty())
+		else if (last_mode == 0)
 		{
-			QGraphicsEllipseItem * last_vertex_item = vertex_item_stack_.back();
-			vertex_item_stack_.pop_back();
-			graphics_scene_->removeItem(last_vertex_item);
-			vertex_list_.pop_back();
+			if (!vertex_item_stack_.empty())
+			{
+				QGraphicsEllipseItem * last_vertex_item = vertex_item_stack_.back();
+				vertex_item_stack_.pop_back();
+				graphics_scene_->removeItem(last_vertex_item);
+				vertex_list_.pop_back();
+			}
+			if (!number_item_stack_.empty())
+			{
+				QGraphicsTextItem * last_number_item = number_item_stack_.back();
+				number_item_stack_.pop_back();
+				graphics_scene_->removeItem(last_number_item);
+			}
 		}
-		if (!number_item_stack_.empty())
-		{
-			QGraphicsTextItem * last_number_item = number_item_stack_.back();
-			number_item_stack_.pop_back();
-			graphics_scene_->removeItem(last_number_item);
-		}
-	}
 
-	update();
+		update();
+	}
 }

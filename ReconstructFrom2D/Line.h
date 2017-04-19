@@ -17,6 +17,8 @@ public:
 	void setP1(int p1);
 	void setP2(int p2);
 	int & operator[](int index);
+	bool operator==(const Line &another) const;
+	bool same_line(int p1, int p2);
 
 private:
 	int p1_;

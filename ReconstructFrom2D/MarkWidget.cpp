@@ -48,6 +48,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(undoButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(undo()));
 	connect(imagesListWidget_.get(), SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(set_mark_image(QListWidgetItem *)));
 	connect(this, SIGNAL(set_image(QString)), displayWidget_.get(), SLOT(set_image(QString)));
+	connect(this, SIGNAL(change_label_state()), displayWidget_.get(), SLOT(change_state()));
 	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
 }
 
@@ -121,4 +122,15 @@ void MarkWidget::detect_planes()
 	std::vector<std::vector<int>>face_circuits;
 	faces_detector->identify_all_faces(face_circuits);
 	displayWidget_->set_faces(face_circuits);
+
+	ConstraintsGenerator cg(800, 1024, 768, displayWidget_->get_vertices(), displayWidget_->get_edges(), face_circuits, displayWidget_->get_parallel_groups());
+	cg.add_perspective_symmetry_constraint();
+}
+
+void MarkWidget::keyPressEvent(QKeyEvent * event)
+{
+	if (event->key() == Qt::Key_Return)
+	{
+		emit change_label_state();
+	}
 }

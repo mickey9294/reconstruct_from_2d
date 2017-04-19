@@ -21,11 +21,32 @@ PlanarFace::PlanarFace(const PlanarFace & another)
 		circuit_[i] = circuit[i];
 
 	normal_ = another.get_normal();
+
+	const std::list<int> &edges = another.const_edges();
+	for (std::list<int>::const_iterator e_it = edges.begin(); e_it != edges.end(); ++e_it)
+		edges_list_.push_back(*e_it);
 }
 
 
 PlanarFace::~PlanarFace()
 {
+}
+
+PlanarFace & PlanarFace::operator=(const PlanarFace & another)
+{
+	id_ = another.id();
+	const std::vector<int> &circuit = another.const_circuit();
+	circuit_.resize(circuit.size());
+	for (int i = 0; i < circuit.size(); i++)
+		circuit_[i] = circuit[i];
+
+	normal_ = another.get_normal();
+
+	const std::list<int> &edges = another.const_edges();
+	for (std::list<int>::const_iterator e_it = edges.begin(); e_it != edges.end(); ++e_it)
+		edges_list_.push_back(*e_it);
+
+	return *this;
 }
 
 void PlanarFace::set_id(int id)
@@ -56,4 +77,19 @@ const std::vector<int> & PlanarFace::const_circuit() const
 std::vector<int>& PlanarFace::get_circuit()
 {
 	return circuit_;
+}
+
+void PlanarFace::add_edge(int line_id)
+{
+	edges_list_.push_back(line_id);
+}
+
+std::list<int>& PlanarFace::get_edges()
+{
+	return edges_list_;
+}
+
+const std::list<int>& PlanarFace::const_edges() const
+{
+	return edges_list_;
 }

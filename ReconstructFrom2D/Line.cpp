@@ -69,3 +69,20 @@ int & Line::operator[](int index)
 	else
 		return p2_;
 }
+
+bool Line::operator==(const Line & another) const
+{
+	if (p1_ == another.p1() && p2_ == another.p2() 
+		|| p1_ == another.p2() && p2_ == another.p1())
+		return true;
+	else
+		return false;
+}
+
+bool Line::same_line(int p1, int p2)
+{
+	if (p1_ == p1 && p2_ == p2 || p1_ == p2 && p2_ == p1)
+		return true;
+	else
+		return false;
+}

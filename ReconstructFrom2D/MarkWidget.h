@@ -11,6 +11,7 @@
 
 #include "MarkGraphicsScene.h"
 #include "FacesIdentifier.h"
+#include "ConstraintsGenerator.h"
 
 class MarkWidget : public QWidget
 {
@@ -29,6 +30,10 @@ public:
 
 signals:
 	void set_image(QString image_path);
+	void change_label_state();
+
+protected:
+	void keyPressEvent(QKeyEvent *event);
 
 private:
 	std::shared_ptr<MarkGraphicsScene> displayWidget_;
