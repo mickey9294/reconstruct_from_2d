@@ -16,8 +16,13 @@
 #include <memory>
 #include <iostream>
 #include <time.h>
+#include <string>
+#include <fstream>
+#include <iostream>
 
 #include <Eigen\Core>
+
+#include <boost\algorithm\string.hpp>
 
 #include "Line.h"
 
@@ -37,6 +42,8 @@ public:
 	std::list<QPointF> & get_vertices();
 	std::list<Line> & get_edges();
 	std::list<std::vector<int>> & get_parallel_groups();
+	const std::string & get_image_path() const;
+	const std::vector<std::vector<int>> &const_face_circuits() const;
 
 	public slots:
 	void undo();
@@ -44,6 +51,9 @@ public:
 	void set_image(QString image_path);
 	void set_faces(const std::vector<std::vector<int>> &face_circuits);
 	void change_state();
+	void finish_label_parallelism();
+	void save_current_state();
+	void load_current_state();
 
 signals:
 	void resize_main_window(int dw, int dh);
@@ -59,6 +69,8 @@ private:
 	const int STACK_SIZE = 5;
 	const int IMAGE_WIDTH = 1024;
 	const int IMAGE_HEIGHT = 768;
+
+	std::string image_path_;
 
 	bool perm_;
 	QPixmap image_;
@@ -95,6 +107,8 @@ private:
 	std::list<QGraphicsPolygonItem *> face_item_stack_;
 	std::list<QGraphicsTextItem *> number_item_stack_;
 	std::list<int> mode_stack_;
+
+	std::vector<std::vector<int>> face_circuits_;
 
 	//void makeItemsControllable(bool areControllable);
 	int find_nearest_vertex(const QPointF &point, QPointF &nearest_vertex);

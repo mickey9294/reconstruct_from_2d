@@ -42,6 +42,7 @@ public:
 	void post_process();
 	void recon_finished();
 	void slot_resize(int dw, int dh);
+	void receive_status(QString msg);
 
 signals:
 	void set_images_path_list(QStringList list);
@@ -65,6 +66,9 @@ private:
 	std::shared_ptr<QAction> actionOpen;
 	std::shared_ptr<QAction> actionSave;
 	std::shared_ptr<QAction> actionExit;
+	std::shared_ptr<QMenu> menuScene;
+	std::shared_ptr<QAction> actionLoadState;
+	std::shared_ptr<QAction> actionSaveState;
 	
 	//void set_image_thumbnails();
 	void initUI();

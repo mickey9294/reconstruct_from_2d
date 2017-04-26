@@ -5,16 +5,12 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 {
 	initUI();
 
-	/*connect(loadButton_, SIGNAL(clicked()), this, SLOT(load_images()));
-	connect(imagesListWidget_.get(), SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(show_big_image(QListWidgetItem *)));
-	connect(calibButton_.get(), SIGNAL(clicked()), this, SLOT(calibrate_camera()));
-	connect(reconButton_.get(), SIGNAL(clicked()), this, SLOT(reconstruct()));
-	connect(postProcessButton_.get(), SIGNAL(clicked()), this, SLOT(post_process()));
-	connect(undoButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(undo()));
-	connect(displayWidget_.get(), SIGNAL(resize_main_window(int, int)), this, SLOT(slot_resize(int, int)));*/
+	move(100, 100);
 
 	connect(actionExit.get(), SIGNAL(triggered()), this, SLOT(close()));
 	connect(actionOpen.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_images()));
+	connect(actionSaveState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(save_scene_state()));
+	connect(actionLoadState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_scene_state()));
 	connect(this, SIGNAL(set_images_path_list(QStringList)), markWidget_.get(), SLOT(set_images_path(QStringList)));
 
 	primary_point_.setZero();
@@ -24,17 +20,22 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 void ReconstructFrom2D::initUI()
 {
 	tabWidget_.reset(new QTabWidget());
-	markWidget_.reset(new MarkWidget());
+	markWidget_.reset(new MarkWidget(this));
 	tabWidget_->addTab(markWidget_.get(), "Start");
 
 	actionOpen.reset(new QAction(tr("&Open"), this));
 	actionSave.reset(new QAction(tr("&Save"), this));
 	actionExit.reset(new QAction(tr("&Exit"), this));
+	actionSaveState.reset(new QAction(tr("&Save Scene State"), this));
+	actionLoadState.reset(new QAction(tr("&Load Scene State"), this));
 	menuFile.reset(menuBar()->addMenu(tr("&File")));
+	menuScene.reset(menuBar()->addMenu(tr("&Scene")));
 	menuFile->addAction(actionOpen.get());
 	menuFile->addAction(actionSave.get());
 	menuFile->addSeparator();
 	menuFile->addAction(actionExit.get());
+	menuScene->addAction(actionSaveState.get());
+	menuScene->addAction(actionLoadState.get());
 
 	// 设置显示当前布局
 	setCentralWidget(tabWidget_.get());
@@ -128,6 +129,11 @@ void ReconstructFrom2D::slot_resize(int dw, int dh)
 	height += dh;
 	this->resize(width, height);
 	this->setGeometry(0, 0, width, height);
+}
+
+void ReconstructFrom2D::receive_status(QString msg)
+{
+	statusBar()->showMessage(msg);
 }
 
 //void ReconstructFrom2D::set_image_thumbnails()

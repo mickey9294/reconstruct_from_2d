@@ -27,11 +27,15 @@ public:
 	void load_images();
 	void set_mark_image(QListWidgetItem *item);
 	void detect_planes();
+	void generate_constraints();
+	void save_scene_state();
+	void load_scene_state();
 
 signals:
 	void set_image(QString image_path);
 	void change_label_state();
-
+	void stop_labeling();
+	
 protected:
 	void keyPressEvent(QKeyEvent *event);
 
@@ -41,7 +45,9 @@ private:
 	std::shared_ptr<QPushButton> loadButton_;
 	std::shared_ptr<QPushButton> resetButton_;
 	std::shared_ptr<QPushButton> detectPlanesButton_;
+	std::shared_ptr<QPushButton> addConstraintsButton_;
 	std::shared_ptr<QListWidget> imagesListWidget_;
+	std::shared_ptr<ConstraintsGenerator> constraints_generator_;
 
 	QStringList images_path_list_;
 

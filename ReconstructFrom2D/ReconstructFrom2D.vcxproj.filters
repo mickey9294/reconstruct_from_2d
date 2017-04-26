@@ -52,9 +52,6 @@
     <ClCompile Include="GeneratedFiles\Release\moc_ReconstructFrom2D.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="PlaneCalibApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug\moc_Reconstructor.cpp">
       <Filter>Generated Files\Debug</Filter>
     </ClCompile>
@@ -121,10 +118,22 @@
     <ClCompile Include="MPFVertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ConstraintsGenerator.cpp">
+    <ClCompile Include="PlanarFace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlanarFace.cpp">
+    <ClCompile Include="CameraClibrator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EquationsSolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_ConstraintsGenerator.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_ConstraintsGenerator.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstraintsGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -150,11 +159,11 @@
     <CustomBuild Include="MarkWidget.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="ConstraintsGenerator.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PlaneCalibApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Seb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -194,10 +203,13 @@
     <ClInclude Include="MPFVertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ConstraintsGenerator.h">
+    <ClInclude Include="PlanarFace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PlanarFace.h">
+    <ClInclude Include="CameraClibrator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EquationsSolver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

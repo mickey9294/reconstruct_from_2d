@@ -2,14 +2,19 @@
 
 const float ConstraintsGenerator::t = 100;
 
-ConstraintsGenerator::ConstraintsGenerator()
+ConstraintsGenerator::ConstraintsGenerator(QObject *parent)
+	: QObject(parent)
 {
 }
 
-ConstraintsGenerator::ConstraintsGenerator(float focal_length, float w, float h, const std::list<QPointF>& vertices,
-	const std::list<Line>& edges, const std::vector<std::vector<int>> & face_circuits, const std::list<std::vector<int>> &parallel_group)
+ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, float w, float h, const std::list<QPointF>& vertices,
+	const std::list<Line>& edges, const std::vector<std::vector<int>> & face_circuits, const std::list<std::vector<int>> &parallel_group,
+	QObject *parent)
+	: QObject(parent)
 {
-	focal_length_ = focal_length;
+	std::shared_ptr<CameraClibrator> calibrator(new CameraClibrator(vertices, edges, parallel_group, w, h));
+
+	calibrator->calibrate(focal_length_, primary_point_);
 	Z0 = -2 * focal_length_;
 
 	calib_mat_.setIdentity();
@@ -22,8 +27,8 @@ ConstraintsGenerator::ConstraintsGenerator(float focal_length, float w, float h,
 	int idx = 0;
 	for (std::list<QPointF>::const_iterator it = vertices.begin(); it != vertices.end(); ++it)
 	{
-		vertices_[idx][0] = it->x() - w / 2.0;
-		vertices_[idx++][1] = h / 2.0 - it->y();
+		vertices_[idx][0] = it->x() - primary_point_.x();
+		vertices_[idx++][1] = primary_point_.y() - it->y();
 	}
 
 	idx = 0;
@@ -41,6 +46,8 @@ ConstraintsGenerator::ConstraintsGenerator(float focal_length, float w, float h,
 		faces_.push_back(PlanarFace(idx++, *it));
 	}
 
+	map_verts_to_face(faces_, vertices_.size());
+
 	set_parallel_groups(parallel_group);
 
 	map_edges_to_face();
@@ -51,49 +58,66 @@ ConstraintsGenerator::~ConstraintsGenerator()
 {
 }
 
+void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2f> &refined_vertices, Eigen::VectorXf &refined_q)
+{
+	add_connectivity_constraint();
+	add_perspective_symmetry_constraint();
+	add_fixing_vertex_contraint();
+	add_line_parallelism_constrain();
+	add_orhogonal_corner_constraint();
+
+	output_constraints();
+	output_environment();
+
+	emit report_status("Adding constraints done.");
+
+	if (!equations_solver_)
+		equations_solver_.reset(new EquationsSolver());
+
+	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+}
+
 void ConstraintsGenerator::add_connectivity_constraint()
 {
 	int num_vertices = vertices_.size();
 	int num_faces = faces_.size();
 
-	std::vector<std::vector<int>> face_vert_map;
-	map_faces_to_verts(faces_, num_vertices, face_vert_map);
-
 	std::list<Eigen::MatrixXf> As;
-	int num_cols = 0;
+	int num_rows = 0;
 	for (int i = 0; i < num_vertices; i++)
 	{
 		Eigen::Vector3f homo_vert;
 		homo_vert.head(2) = vertices_[i];
 		homo_vert[2] = -focal_length_;
 
-		std::vector<int> &related_faces_id = face_vert_map[i];
+		std::vector<int> &related_faces_id = vert_to_face_map_[i];
 		int num_related_faces = related_faces_id.size();
-		num_cols += num_related_faces - 1;
+		num_rows += num_related_faces - 1;
 
-		Eigen::MatrixXf Ai(num_related_faces - 1, 3 * num_faces);
-		Ai.setZero();
-
-		for (int j = 0; j < num_related_faces - 1; j++)
+		if (num_rows > 0)
 		{
-			int face_id = related_faces_id[j];
-			int next_face_id = related_faces_id[j + 1];
-			Ai.block<1, 3>(j, 3 * face_id) = homo_vert.transpose();
-			Ai.block<1, 3>(j, 3 * next_face_id) = -homo_vert.transpose();
-		}
+			Eigen::MatrixXf Ai(num_related_faces - 1, 3 * num_faces);
+			Ai.setZero();
 
-		As.push_back(Ai);
+			for (int j = 0; j < num_related_faces - 1; j++)
+			{
+				int face_id = related_faces_id[j];
+				int next_face_id = related_faces_id[j + 1];
+				Ai.block<1, 3>(j, 3 * face_id) = homo_vert.transpose();
+				Ai.block<1, 3>(j, 3 * next_face_id) = -homo_vert.transpose();
+			}
+
+			As.push_back(Ai);
+		}
 	}
 
-	A_.resize(3 * num_faces, num_cols);
-	int start_col = 0;
+	A_.resize(num_rows, 3 * num_faces);
+	int start_row = 0;
 	for (std::list<Eigen::MatrixXf>::iterator A_it = As.begin(); A_it != As.end(); ++A_it)
 	{
-		A_.block(0, start_col, 3 * num_faces, A_it->cols()) = *A_it;
-		start_col += A_it->cols();
+		A_.block(start_row, 0, A_it->rows(), 3 * num_faces) = *A_it;
+		start_row += A_it->rows();
 	}
-
-	A_ = A_.transpose();
 }
 
 void ConstraintsGenerator::add_perspective_symmetry_constraint()
@@ -103,6 +127,8 @@ void ConstraintsGenerator::add_perspective_symmetry_constraint()
 		Eigen::Vector3f pp, pas, pae;
 		perspective_symmetry_in_face(*face_it, pp, pas, pae);
 	}
+
+	B_.setZero();
 }
 
 void ConstraintsGenerator::add_fixing_vertex_contraint()
@@ -110,7 +136,7 @@ void ConstraintsGenerator::add_fixing_vertex_contraint()
 	Eigen::Vector3f x0;
 	x0.head(2) = vertices_[faces_.front().const_circuit().front()];
 	x0[2] = -focal_length_;
-	
+
 	int num_faces = faces_.size();
 
 	E_.setZero(1, 3 * num_faces);
@@ -123,6 +149,7 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 	map_edges_to_parallel_group(edge_parallel_group_map);
 
 	int Nf = faces_.size();
+	lines_parallel_to_faces_.resize(Nf);
 
 	std::list<Eigen::VectorXf> Crows;
 
@@ -131,10 +158,17 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 		int face_id = face_it->id();
 		const std::list<int> & edges_list = face_it->const_edges();
 
+		std::unordered_set<int> used_parallel_groups;
+
 		for (std::list<int>::const_iterator e_it = edges_list.begin(); e_it != edges_list.end(); ++e_it)
 		{
 			int line_id = *e_it;
 			int parallel_group_id = edge_parallel_group_map[line_id];
+
+			if (used_parallel_groups.find(parallel_group_id) != used_parallel_groups.end())
+				continue;
+			else
+				used_parallel_groups.insert(parallel_group_id);
 
 			if (parallel_group_id >= 0)
 			{
@@ -152,6 +186,8 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 							int paraline_2 = parallel_group[j];
 							if (paraline_2 != line_id && !is_in_face(paraline_2, face_id))
 							{
+								lines_parallel_to_faces_[face_id].push_back(std::pair<int, int>(paraline_1, paraline_2));
+
 								Eigen::VectorXf Crow(3 * Nf);
 								Crow.setZero();
 
@@ -161,9 +197,10 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 								assert(std::abs(v[2]) > 1e-4);
 								v[0] /= v[2];
 								v[1] /= v[2];
+								v[2] = 1.0;
 
 								Eigen::Vector3f R = calib_mat_.inverse() * v;
-								Crow.block<1, 3>(0, face_id * 3) = R.transpose();
+								Crow.segment(3 * face_id, 3) = R;
 
 								Crows.push_back(Crow);
 							}
@@ -177,9 +214,97 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 	C_.resize(Crows.size(), 3 * Nf);
 	int row_idx = 0;
 	for (std::list<Eigen::VectorXf>::iterator row_it = Crows.begin(); row_it != Crows.end(); ++row_it, ++row_idx)
-		C_.block(row_idx, 0, 1, 3 * Nf) = *row_it;
+		C_.block(row_idx, 0, 1, 3 * Nf) = row_it->transpose();
 
-	std::cout << "C:\n" << C_ << std::endl;
+	//std::cout << "C:\n" << C_ << std::endl;
+}
+
+void ConstraintsGenerator::add_orhogonal_corner_constraint()
+{
+	std::vector<std::vector<int>> vert_to_edge_map;
+	map_verts_to_edge(vert_to_edge_map);
+
+	std::list<std::pair<int, int>> orthogonal_faces;
+	std::unordered_set<int> added_faces_pair;
+
+	for (int i = 0; i < vertices_.size(); i++)
+	{
+		if (vert_to_edge_map[i].size() == 3)
+		{
+			std::vector<Eigen::Vector2f> lines(6);
+			for (int j = 0; j < 3; j++)
+			{
+				Eigen::Vector2f line_direction = get_line_direction(vert_to_edge_map[i][j]);
+				lines[2 * j] = line_direction;
+				lines[2 * j + 1] = -line_direction;
+			}
+
+			bool ortho_possible = true;
+			for (int j = 0; j < 2; j++)
+			{
+				for (int k = 2; k < 4; k++)
+				{
+					for (int l = 4; l < 6; l++)
+					{
+						if (lines[j].dot(lines[k]) > 0
+							&& lines[j].dot(lines[l]) > 0
+							&& lines[k].dot(lines[l]) > 0)
+						{
+							ortho_possible = false;
+							break;
+						}
+					}
+					if (!ortho_possible)
+						break;
+				}
+				if (!ortho_possible)
+					break;
+			}
+
+			if (ortho_possible)
+			{
+				std::vector<int> &related_faces = vert_to_face_map_[i];
+				if (related_faces.size() > 1)
+				{
+					int num_pairs = factorial(related_faces.size()) / 2;
+					std::vector<std::pair<int, int>> face_pairs(num_pairs);
+					int pair_count = 0;
+					for (int j = 0; j < related_faces.size(); j++)
+					{
+						int face_id_1 = related_faces[j];
+						for (int k = j + 1; k < related_faces.size(); k++)
+						{
+							int face_id_2 = related_faces[k];
+							assert(face_id_1 != face_id_2);
+							face_pairs[pair_count].first = std::min(face_id_1, face_id_2);
+							face_pairs[pair_count].second = std::max(face_id_1, face_id_2);
+							pair_count++;
+						}
+					}
+
+					for (int j = 0; j < face_pairs.size(); j++)
+					{
+						std::pair<int, int> &face_pair = face_pairs[j];
+						int pair_number = std::pow(2, face_pair.first) + std::pow(3, face_pair.second);
+						if (added_faces_pair.find(pair_number) == added_faces_pair.end())
+						{
+							orthogonal_faces.push_back(face_pair);
+							added_faces_pair.insert(pair_number);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	G_.resize(orthogonal_faces.size());
+	int idx = 0;
+	for (std::list<std::pair<int, int>>::iterator pair_it = orthogonal_faces.begin();
+		pair_it != orthogonal_faces.end(); ++pair_it, ++idx)
+	{
+		G_[idx].first = pair_it->first;
+		G_[idx].second = pair_it->second;
+	}
 }
 
 void ConstraintsGenerator::detect_symmetric_faces()
@@ -193,7 +318,7 @@ void ConstraintsGenerator::detect_symmetric_faces()
 
 void ConstraintsGenerator::set_parallel_groups(const std::list<std::vector<int>>& parallel_groups)
 {
-	parallel_groups_.resize(parallel_groups.size());
+	parallel_groups_.reserve(parallel_groups.size());
 	for (std::list<std::vector<int>>::const_iterator g_it = parallel_groups.begin(); g_it != parallel_groups.end(); ++g_it)
 	{
 		std::vector<int> group = *g_it;
@@ -201,11 +326,10 @@ void ConstraintsGenerator::set_parallel_groups(const std::list<std::vector<int>>
 	}
 }
 
-void ConstraintsGenerator::map_faces_to_verts(const std::vector<PlanarFace>& faces, int num_vertices,
-	std::vector<std::vector<int>>& face_vert_map)
+void ConstraintsGenerator::map_verts_to_face(const std::vector<PlanarFace>& faces, int num_vertices)
 {
-	face_vert_map.clear();
-	face_vert_map.resize(num_vertices);
+	vert_to_face_map_.clear();
+	vert_to_face_map_.resize(num_vertices);
 
 	for (std::vector<PlanarFace>::const_iterator it = faces.begin();
 		it != faces.end(); ++it)
@@ -214,15 +338,15 @@ void ConstraintsGenerator::map_faces_to_verts(const std::vector<PlanarFace>& fac
 		const std::vector<int> &circuit = it->const_circuit();
 
 		for (std::vector<int>::const_iterator jt = circuit.begin(); jt != circuit.end(); ++jt)
-			face_vert_map[*jt].push_back(id);
+			vert_to_face_map_[*jt].push_back(id);
 	}
-	
-	for (std::vector<std::vector<int>>::iterator it = face_vert_map.begin();
-		it != face_vert_map.end(); ++it)
+
+	for (std::vector<std::vector<int>>::iterator it = vert_to_face_map_.begin();
+		it != vert_to_face_map_.end(); ++it)
 		it->shrink_to_fit();
 }
 
-bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face, 
+bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
 	Eigen::Vector3f & perspective_point, Eigen::Vector3f & sym_axis_start, Eigen::Vector3f & sym_axis_end)
 {
 	const std::vector<int> &circuit = face.const_circuit();
@@ -274,7 +398,7 @@ bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
 
 		Eigen::Matrix3f Hi;
 		Eigen::VectorXf hi = evectors.col(eval_idx.front());
-		
+
 		for (int j = 0; j < 3; j++)
 		{
 			for (int t = 0; t < 3; t++)
@@ -282,7 +406,7 @@ bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
 		}
 
 		//Hi = X_star * X.transpose() * ((X * X.transpose()).inverse());
- 
+
 		float ci = 0;
 		for (int k = 0; k < N; k++)
 		{
@@ -304,23 +428,23 @@ bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
 			min_ci = ci;
 			min_Hi = Hi;
 
-			Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
-			std::ofstream out("../X.csv");
-			out << X.format(CSVFormat);
-			out.close();
+			//Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
+			//std::ofstream out("../X.csv");
+			//out << X.format(CSVFormat);
+			//out.close();
 
-			out.open("../X_star.csv");
-			out << X_star.format(CSVFormat);
-			out.close();
+			//out.open("../X_star.csv");
+			//out << X_star.format(CSVFormat);
+			//out.close();
 
-			out.open("../H.csv");
-			out << Hi.format(CSVFormat);
-			out.close();
+			//out.open("../H.csv");
+			//out << Hi.format(CSVFormat);
+			//out.close();
 		}
 	}
 
 	//if(min_ci >= t)
-		//return false;
+	//return false;
 
 	Eigen::EigenSolver<Eigen::Matrix3f> es(min_Hi);
 	Eigen::MatrixXcf eigen_values = es.eigenvalues();
@@ -367,7 +491,7 @@ void ConstraintsGenerator::map_edges_to_face()
 
 int ConstraintsGenerator::get_line_id(int v1, int v2)
 {
-	for(int i = 0; i < edges_.size(); i++)
+	for (int i = 0; i < edges_.size(); i++)
 	{
 		if (edges_[i].same_line(v1, v2))
 			return i;
@@ -409,7 +533,7 @@ void ConstraintsGenerator::map_edges_to_parallel_group(std::vector<int>& edge_pa
 		return;
 
 	edge_parallel_group_map.resize(edges_.size(), -1);
-	
+
 	int group_idx = 0;
 	for (std::vector<std::vector<int>>::iterator group_it = parallel_groups_.begin();
 		group_it != parallel_groups_.end(); ++group_it, ++group_idx)
@@ -435,6 +559,175 @@ Eigen::Vector3f ConstraintsGenerator::get_line_equation(int line_id)
 	float a = slope;
 	float b = -1;
 	float c = -slope * v1.x() + v1.y();
-	
+
 	return Eigen::Vector3f(a, b, c);
 }
+
+void ConstraintsGenerator::map_verts_to_edge(std::vector<std::vector<int>>& vert_to_edge_map)
+{
+	vert_to_edge_map.resize(vertices_.size());
+
+	std::vector<std::unordered_set<int>> temp_map(vertices_.size());
+
+	int l_idx = 0;
+	for (std::vector<Line>::iterator l_it = edges_.begin(); l_it != edges_.end(); ++l_it, ++l_idx)
+	{
+		int v1 = l_it->p1();
+		int v2 = l_it->p2();
+
+		if (temp_map[v1].find(l_idx) == temp_map[v1].end())
+			temp_map[v1].insert(l_idx);
+		if (temp_map[v2].find(l_idx) == temp_map[v2].end())
+			temp_map[v2].insert(l_idx);
+	}
+
+	for (int i = 0; i < vertices_.size(); i++)
+	{
+		vert_to_edge_map[i].resize(temp_map[i].size());
+		int idx = 0;
+		for (std::unordered_set<int>::iterator it = temp_map[i].begin();
+			it != temp_map[i].end(); ++it, ++idx)
+		{
+			vert_to_edge_map[i][idx] = *it;
+		}
+	}
+}
+
+Eigen::Vector2f ConstraintsGenerator::get_line_direction(int line_id)
+{
+	Line &line = edges_[line_id];
+	Eigen::Vector2f &v1 = vertices_[line.p1()];
+	Eigen::Vector2f &v2 = vertices_[line.p2()];
+
+	return v2 - v1;
+}
+
+void ConstraintsGenerator::output_constraints()
+{
+	std::ofstream out;
+	std::string output_dir = "D:\\Libraries\\matlab_tools\\broyden\\";
+	Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
+
+	std::string A_path = output_dir + "A.csv";
+	out.open(A_path.c_str());
+	if (out.is_open())
+	{
+		out << A_.format(CSVFormat);
+		out.close();
+	}
+
+	std::string B_path = output_dir + "B.csv";
+	out.open(B_path.c_str());
+	if (out.is_open())
+	{
+		out << B_.format(CSVFormat);
+		out.close();
+	}
+
+	std::string C_path = output_dir + "C.csv";
+	out.open(C_path.c_str());
+	if (out.is_open())
+	{
+		out << C_.format(CSVFormat);
+		out.close();
+	}
+
+	Eigen::MatrixXf E_aug(E_.rows(), E_.cols() + 1);
+	E_aug.block(0, 0, E_.rows(), E_.cols()) = E_;
+	Eigen::VectorXf constants(E_.rows());
+	constants.setConstant(focal_length_ / Z0);
+	E_aug.block(0, E_.cols(), E_.rows(), 1) = constants;
+
+	std::string E_path = output_dir + "E.csv";
+	out.open(E_path.c_str());
+	if (out.is_open())
+	{
+		out << E_aug.format(CSVFormat);
+		out.close();
+	}
+
+	std::string G_path = output_dir + "G.csv";
+	out.open(G_path.c_str());
+	if (out.is_open())
+	{
+		for (std::vector<std::pair<int, int>>::iterator it = G_.begin(); it != G_.end(); ++it)
+		{
+			out << it->first << "," << it->second << std::endl;
+		}
+		out.close();
+	}
+}
+
+void ConstraintsGenerator::output_environment()
+{
+	std::ofstream out;
+	out.open("D:\\Libraries\\matlab_tools\\broyden\\x0.csv");
+	if (out.is_open())
+	{
+		for (std::vector<Eigen::Vector2f>::iterator vert_it = vertices_.begin(); vert_it != vertices_.end(); ++vert_it)
+			out << vert_it->x() << "," << vert_it->y() << std::endl;
+
+		out.close();
+	}
+
+	out.open("D:\\Libraries\\matlab_tools\\broyden\\edges.csv");
+	if (out.is_open())
+	{
+		for (std::vector<Line>::iterator e_it = edges_.begin(); e_it != edges_.end(); ++e_it)
+			out << e_it->p1() << "," << e_it->p2() << std::endl;
+		out.close();
+	}
+
+	out.open("D:\\Libraries\\matlab_tools\\broyden\\vert_face_map.txt");
+	if (out.is_open())
+	{
+		for (std::vector<std::vector<int>>::iterator v_it = vert_to_face_map_.begin();
+			v_it != vert_to_face_map_.end(); ++v_it)
+		{
+			if (!v_it->empty())
+			{
+				out << v_it->front();
+				for (int i = 1; i < v_it->size(); i++)
+					out << " " << v_it->operator[](i);
+				out << std::endl;
+			}
+		}
+		out.close();
+	}
+
+	out.open("D:\\Libraries\\matlab_tools\\broyden\\face_parallel_groups.txt");
+	if (out.is_open())
+	{
+		for (std::vector<std::list<std::pair<int, int>>>::iterator f_it = lines_parallel_to_faces_.begin();
+			f_it != lines_parallel_to_faces_.end(); ++f_it)
+		{
+			if (!f_it->empty())
+			{
+				out << f_it->front().first << " " << f_it->front().second;
+				std::list<std::pair<int, int>>::iterator l_it = f_it->begin();
+				std::advance(l_it, 1);
+				for (; l_it != f_it->end(); ++l_it)
+					out << " " << l_it->first << " " << l_it->second;
+				out << std::endl;
+			}
+		}
+		out.close();
+	}
+
+	out.open("D:\\Libraries\\matlab_tools\\broyden\\f.csv");
+	if (out.is_open())
+	{
+		out << focal_length_ << std::endl;
+		out.close();
+	}
+}
+
+int ConstraintsGenerator::factorial(int n)
+{
+	int fact = 1;
+	for (int i = 2; i <= n; i++)
+		fact *= i;
+
+	return fact;
+}
+

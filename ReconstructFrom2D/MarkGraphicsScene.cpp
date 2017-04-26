@@ -61,6 +61,164 @@ std::list<std::vector<int>>& MarkGraphicsScene::get_parallel_groups()
 	return parallel_lines_group_;
 }
 
+const std::string & MarkGraphicsScene::get_image_path() const
+{
+	return image_path_;
+}
+
+const std::vector<std::vector<int>>& MarkGraphicsScene::const_face_circuits() const
+{
+	return face_circuits_;
+}
+
+void MarkGraphicsScene::save_current_state()
+{
+	std::ofstream out(".\\state.txt");
+	if (out.is_open())
+	{
+		/* Save the number */
+		out << vertex_list_.size() << " " << line_list_.size() << " "
+			<< face_circuits_.size() << " " << parallel_lines_group_.size() << std::endl;
+
+		/* Save vertices */
+		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it)
+			out << vert_it->x() << " " << vert_it->y() << std::endl;
+
+		/* Save the edges */
+		for (std::list<Line>::iterator edge_it = line_list_.begin(); edge_it != line_list_.end(); ++edge_it)
+			out << edge_it->p1() << " " << edge_it->p2() << std::endl;
+
+		/* Save the face circuits */
+		for (std::vector<std::vector<int>>::iterator face_it = face_circuits_.begin(); face_it != face_circuits_.end(); ++face_it)
+		{
+			if (!face_it->empty())
+			{
+				out << face_it->front();
+				for (int i = 1; i < face_it->size(); i++)
+					out << " " << face_it->operator[](i);
+				out << std::endl;
+			}
+		}
+
+		/* Save the parallel groups */
+		for (std::list<std::vector<int>>::iterator group_it = parallel_lines_group_.begin();
+			group_it != parallel_lines_group_.end(); ++group_it)
+		{
+			if (!group_it->empty())
+			{
+				out << group_it->front();
+				for (int i = 1; i < group_it->size(); i++)
+					out << " " << group_it->operator[](i);
+				out << std::endl;
+			}
+		}
+
+		out.close();
+	}
+}
+
+void MarkGraphicsScene::load_current_state()
+{
+	std::ifstream in(".\\state.txt");
+	if (in.is_open())
+	{
+		std::string line;
+		std::getline(in, line);
+
+		std::vector<std::string> line_split;
+		boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+		int num_vertices = std::stoi(line_split[0]);
+		int num_edges = std::stoi(line_split[1]);
+		int num_faces = std::stoi(line_split[2]);
+		int num_parallel_groups = std::stoi(line_split[3]);
+		
+		for (int i = 0; i < num_vertices; i++)
+		{
+			std::getline(in, line);
+			boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+			QPointF vert(std::stof(line_split[0]), std::stof(line_split[1]));
+			vertex_list_.push_back(vert);
+		}
+
+		for (int i = 0; i < num_edges; i++)
+		{
+			std::getline(in, line);
+			boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+			Line edge(std::stoi(line_split[0]), std::stoi(line_split[1]));
+			line_list_.push_back(edge);
+		}
+
+		std::vector<std::vector<int>> face_circuits(num_faces);
+		for (int i = 0; i < num_faces; i++)
+		{
+			std::getline(in, line);
+			boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+			face_circuits[i].resize(line_split.size());
+			for (int j = 0; j < line_split.size(); j++)
+				face_circuits[i][j] = std::stoi(line_split[j]);
+		}
+
+		for (int i = 0; i < num_parallel_groups; i++)
+		{
+			std::getline(in, line);
+			boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+			std::vector<int> group(line_split.size());
+			for (int j = 0; j < line_split.size(); j++)
+				group[j] = std::stoi(line_split[j]);
+			parallel_lines_group_.push_back(group);
+		}
+
+		/* Restore state of graphics scene */
+		QFont font;
+		font.setPointSize(12);
+		font.setBold(true);
+		int idx = 0;
+		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it, ++idx)
+		{
+			vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 2, vert_it->y() - 2, 4, 4, vertex_pen_);
+			vertex_item_stack_.push_back(vertex_item_);
+			number_item_ = graphics_scene_->addText(QString::number(idx), font);
+			number_item_->setPos(*vert_it);
+			number_item_stack_.push_back(number_item_);
+			mode_stack_.push_back(0);
+		}
+
+		for (std::list<Line>::iterator edge_it = line_list_.begin(); edge_it != line_list_.end(); ++edge_it)
+		{
+			std::list<QPointF>::iterator it = vertex_list_.begin(); 
+			std::advance(it, edge_it->p1());
+			QPointF v1 = *it;
+			it = vertex_list_.begin();
+			std::advance(it, edge_it->p2());
+			QPointF v2 = *it;
+
+			QLineF line(v1, v2);
+			line_item_ = graphics_scene_->addLine(line, line_pen_);
+			line_item_stack_.push_back(line_item_);
+			mode_stack_.push_back(1);
+		}
+		perm_ = true;
+
+		set_faces(face_circuits);
+
+		for (std::list<std::vector<int>>::iterator group_it = parallel_lines_group_.begin();
+			group_it != parallel_lines_group_.end(); ++group_it)
+		{
+			parallel_pen_ = random_pen();
+			for (std::vector<int>::iterator l_it = group_it->begin(); l_it != group_it->end(); ++l_it)
+			{
+				std::list<QGraphicsLineItem *>::iterator it = line_item_stack_.begin();
+				std::advance(it, *l_it);
+				(*it)->setPen(parallel_pen_);
+			}
+		}
+
+		update();
+
+		in.close();
+	}
+}
+
 void MarkGraphicsScene::set_image(QString image_path)
 {
 	QImage test_img(image_path);
@@ -72,6 +230,8 @@ void MarkGraphicsScene::set_image(QString image_path)
 	}
 	else
 	{
+		image_path_ = image_path.toStdString();
+
 		if (image_.width() > IMAGE_WIDTH)
 			image_ = image_.scaledToWidth(IMAGE_WIDTH);
 		int img_w = image_.width();
@@ -95,14 +255,21 @@ void MarkGraphicsScene::set_image(QString image_path)
 
 void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circuits)
 {
+	face_circuits_.resize(face_circuits.size());
+
+	int face_idx = 0;
 	for (std::vector<std::vector<int>>::const_iterator face_it = face_circuits.begin();
-		face_it != face_circuits.end(); ++face_it)
+		face_it != face_circuits.end(); ++face_it, ++face_idx)
 	{
+		face_circuits_[face_idx].clear();
+		face_circuits_[face_idx].reserve(face_it->size());
+
 		QVector<QPointF> face_vertices;
 		face_vertices.reserve(face_it->size());
 		std::vector<QPointF> verts_vec(vertex_list_.begin(), vertex_list_.end());
 		for (std::vector<int>::const_iterator vert_it = face_it->begin(); vert_it != face_it->end(); vert_it++)
 		{
+			face_circuits_[face_idx].push_back(*vert_it);
 			face_vertices.push_back(verts_vec[*vert_it]);
 		}
 		//face_vertices.push_back(verts_vec.front());
@@ -119,6 +286,9 @@ void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circ
 		
 		QGraphicsPolygonItem * face_item = graphics_scene_->addPolygon(face, face_pen, face_brush);
 		face_item_stack_.push_back(face_item);
+
+		
+		
 	}
 
 	update();
@@ -162,6 +332,24 @@ void MarkGraphicsScene::change_state()
 		N_.resize(0, 0);
 		A_.resize(0, 0);
 		B_.resize(0, 0);
+	}
+}
+
+void MarkGraphicsScene::finish_label_parallelism()
+{
+	if (!current_parallel_group_.empty())
+	{
+		std::vector<int> new_parallel_group(current_parallel_group_.size());
+		int idx = 0;
+		for (std::unordered_set<int>::iterator it = current_parallel_group_.begin();
+			it != current_parallel_group_.end(); ++it)
+		{
+			new_parallel_group[idx++] = *it;
+		}
+		parallel_lines_group_.push_back(new_parallel_group);
+
+		current_parallel_group_.clear();
+		parallel_pen_ = random_pen();
 	}
 }
 
@@ -394,21 +582,45 @@ bool MarkGraphicsScene::find_nearest_edge(const QPoint & point, int & nearest_ed
 		return false;
 
 	Eigen::Vector2f p((float)point.x(), (float)point.y());
-	Eigen::MatrixXf AP = A_.colwise() - p;
+	//Eigen::MatrixXf AP = A_.colwise() - p;
 
-	Eigen::MatrixXf d_vec = N_.array().rowwise() * ((AP.transpose() * N_).diagonal().transpose().array());
-	Eigen::VectorXf result = (AP - d_vec).colwise().norm();
+	//Eigen::MatrixXf d_vec = N_.array().rowwise() * ((AP.transpose() * N_).diagonal().transpose().array());
+	//Eigen::VectorXf result = (AP - d_vec).colwise().norm();
 
-	distance = result.minCoeff(&nearest_edge_id);
+	//distance = result.minCoeff(&nearest_edge_id);
 
 	float dist_threshold = 0.05 * this->height();
+	
+	distance = std::numeric_limits<float>::max();
+	for (int i = 0; i < line_list_.size(); i++)
+	{
+		float min_dist = std::numeric_limits<float>::max();
+
+		Eigen::Vector2f v1 = A_.col(i);
+		Eigen::Vector2f v2 = B_.col(i);
+
+		float l2 = (v2 - v1).transpose() * (v2 - v1);
+		if (std::abs(l2) < 1e-4)
+		{
+			min_dist = (p - v1).norm();
+		}
+		else
+		{
+			float t = std::max(0.0f, std::min(1.0f, (p - v1).dot(v2 - v1) / l2));
+			Eigen::Vector2f projection = v1 + t * (v2 - v1);
+			min_dist = (p - projection).norm();
+		}
+
+		if (min_dist < distance)
+		{
+			distance = min_dist;
+			nearest_edge_id = i;
+		}
+	}
+
 	if (distance > dist_threshold)
 		return false;
-	//Eigen::Vector2f P1 = A_.col(nearest_edge_id);
-	//Eigen::Vector2f P2 = B_.col(nearest_edge_id);
-	//float end_dist = std::min((p - P1).norm(), (p - P2).norm());
-	//if (end_dist > dist_threshold)
-	//	return false;
+
 	return true;
 }
 
@@ -425,7 +637,7 @@ QColor MarkGraphicsScene::random_color()
 QPen MarkGraphicsScene::random_pen()
 {
 	QPen pen;
-	pen.setWidth(3);
+	pen.setWidth(5);
 	pen.setColor(random_color());
 	
 	return pen;

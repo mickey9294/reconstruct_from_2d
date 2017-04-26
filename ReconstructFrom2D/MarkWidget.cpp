@@ -7,6 +7,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	loadButton_.reset(new QPushButton("Load Images"));
 	resetButton_.reset(new QPushButton("Reset"));
 	detectPlanesButton_.reset(new QPushButton("Detect Planes"));
+	addConstraintsButton_.reset(new QPushButton("Add Constraints"));
 	displayWidget_.reset(new MarkGraphicsScene());
 	imagesListWidget_.reset(new QListWidget());
 	imagesListWidget_->setFixedWidth(250);
@@ -30,6 +31,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	QVBoxLayout * display_layout = new QVBoxLayout();
 	QHBoxLayout * undo_layout = new QHBoxLayout();
 	undo_layout->addWidget(detectPlanesButton_.get());
+	undo_layout->addWidget(addConstraintsButton_.get());
 	undo_layout->addStretch(0.5);
 	undo_layout->addWidget(resetButton_.get());
 	undo_layout->addWidget(undoButton_.get());
@@ -46,10 +48,13 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(loadButton_.get(), SIGNAL(clicked()), this, SLOT(load_images()));
 	connect(resetButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(reset()));
 	connect(undoButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(undo()));
+	connect(addConstraintsButton_.get(), SIGNAL(clicked()), this, SLOT(generate_constraints()));
 	connect(imagesListWidget_.get(), SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(set_mark_image(QListWidgetItem *)));
 	connect(this, SIGNAL(set_image(QString)), displayWidget_.get(), SLOT(set_image(QString)));
 	connect(this, SIGNAL(change_label_state()), displayWidget_.get(), SLOT(change_state()));
+	connect(this, SIGNAL(stop_labeling()), displayWidget_.get(), SLOT(finish_label_parallelism()));
 	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
+	connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent, SLOT(receive_status(QString)));
 }
 
 MarkWidget::~MarkWidget()
@@ -84,7 +89,11 @@ void MarkWidget::load_images()
 	//out.close();
 
 	if (!images_path_list_.empty())
+	{
 		set_image_thumbnails();
+
+		displayWidget_->set_image(images_path_list_.front());
+	}
 }
 
 void MarkWidget::set_images_path(QStringList list)
@@ -123,8 +132,28 @@ void MarkWidget::detect_planes()
 	faces_detector->identify_all_faces(face_circuits);
 	displayWidget_->set_faces(face_circuits);
 
-	ConstraintsGenerator cg(800, 1024, 768, displayWidget_->get_vertices(), displayWidget_->get_edges(), face_circuits, displayWidget_->get_parallel_groups());
-	cg.add_perspective_symmetry_constraint();
+	emit stop_labeling();
+}
+
+void MarkWidget::generate_constraints()
+{
+	if(!constraints_generator_)
+		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), 1024, 768, displayWidget_->get_vertices(),
+			displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups(), this));
+	
+	std::vector<Eigen::Vector2f> refined_vertices;
+	Eigen::VectorXf refined_q;
+	constraints_generator_->add_constraints(refined_vertices, refined_q);
+}
+
+void MarkWidget::save_scene_state()
+{
+	displayWidget_->save_current_state();
+}
+
+void MarkWidget::load_scene_state()
+{
+	displayWidget_->load_current_state();
 }
 
 void MarkWidget::keyPressEvent(QKeyEvent * event)
