@@ -23,6 +23,7 @@ public:
 
 	const std::vector<int> &const_circuit() const;
 	std::vector<int> & get_circuit();
+	std::string circuit_string() const;
 
 	void add_edge(int line_id);
 	std::list<int> &get_edges();

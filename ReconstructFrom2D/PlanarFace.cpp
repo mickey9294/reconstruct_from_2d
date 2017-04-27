@@ -79,6 +79,19 @@ std::vector<int>& PlanarFace::get_circuit()
 	return circuit_;
 }
 
+std::string PlanarFace::circuit_string() const
+{
+	if (circuit_.empty())
+		return "";
+
+	std::stringstream ss;
+	ss << circuit_.front();
+	for (int i = 1; i < circuit_.size(); i++)
+		ss << "," << circuit_[i];
+
+	return ss.str();
+}
+
 void PlanarFace::add_edge(int line_id)
 {
 	edges_list_.push_back(line_id);

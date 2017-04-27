@@ -43,8 +43,6 @@ public:
 	void add_line_parallelism_constrain();
 	void add_orhogonal_corner_constraint();
 
-	void detect_symmetric_faces();
-
 	void set_parallel_groups(const std::list<std::vector<int>> &parallel_group);
 
 	float get_focal_length() const;
@@ -79,9 +77,6 @@ private:
 
 
 	void map_verts_to_face(const std::vector<PlanarFace> &faces, int num_vertices);
-
-	bool perspective_symmetry_in_face(const PlanarFace &face, Eigen::Vector3f &perspective_point,
-		Eigen::Vector3f &sym_axis);
 
 	Eigen::MatrixXf form_S(const Eigen::Vector3f &v1, const Eigen::Vector3f &v2);
 

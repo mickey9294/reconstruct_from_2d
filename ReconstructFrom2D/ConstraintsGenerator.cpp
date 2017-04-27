@@ -135,17 +135,57 @@ void ConstraintsGenerator::add_connectivity_constraint()
 
 void ConstraintsGenerator::add_perspective_symmetry_constraint()
 {
-	Eigen::Matrix3f K;
-	K.setIdentity();
-	K(0, 0) = focal_length_;
-	K(1, 1) = focal_length_;
-	for (std::vector<PlanarFace>::iterator face_it = faces_.begin(); face_it != faces_.end(); ++face_it)
+	std::ofstream out("D:\\Libraries\\matlab_tools\\broyden\\circuits.txt");
+	if (out.is_open())
 	{
-		Eigen::Vector3f perpective_point, sym_axis;
-		bool ret = perspective_symmetry_in_face(*face_it, perpective_point, sym_axis);
+		for (std::vector<PlanarFace>::iterator f_it = faces_.begin(); f_it != faces_.end(); ++f_it)
+			out << f_it->circuit_string() << std::endl;
+
+		out.close();
 	}
 
-	B_.setZero();
+	Engine *ep;
+	if (!(ep = engOpen("\0"))) //启动matlab 引擎
+	{
+		std::cerr << "Initilizing Reconstructor failed." << std::endl;
+		return;
+	}
+	else
+		engSetVisible(ep, false); // 设置窗口不可见
+	
+	engEvalString(ep, "cd \'D:\\Libraries\\matlab_tools\\broyden\';");
+	std::string sym_detect_cmd = "detect_perspective_syms(" + std::to_string(faces_.size()) + ");";
+	engEvalString(ep, sym_detect_cmd.c_str());
+
+	engClose(ep);
+
+	std::ifstream in("D:\\Libraries\\matlab_tools\\broyden\\B.csv");
+	if (in.is_open())
+	{
+		std::list<Eigen::VectorXf> rows;
+		std::string line;
+		std::vector<std::string> line_split;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+			{
+				boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
+				Eigen::VectorXf row(line_split.size());
+				for (int i = 0; i < line_split.size(); i++)
+					row[i] = std::stof(line_split[i]);
+
+				rows.push_back(row);
+			}
+		}
+
+		B_.resize(rows.size(), 3 * faces_.size());
+		int row_idx = 0;
+		for (std::list<Eigen::VectorXf>::iterator row_it = rows.begin(); row_it != rows.end(); ++row_it, ++row_idx)
+			B_.row(row_idx) = *row_it;
+
+		in.close();
+	}
 }
 
 void ConstraintsGenerator::add_fixing_vertex_contraint()
@@ -324,15 +364,6 @@ void ConstraintsGenerator::add_orhogonal_corner_constraint()
 	}
 }
 
-void ConstraintsGenerator::detect_symmetric_faces()
-{
-	for (int i = 0; i < faces_.size(); i++)
-	{
-		Eigen::Vector3f perspective_point, sym_axis;
-		bool ret = perspective_symmetry_in_face(faces_[i], perspective_point, sym_axis);
-	}
-}
-
 void ConstraintsGenerator::set_parallel_groups(const std::list<std::vector<int>>& parallel_groups)
 {
 	parallel_groups_.reserve(parallel_groups.size());
@@ -366,69 +397,6 @@ void ConstraintsGenerator::map_verts_to_face(const std::vector<PlanarFace>& face
 	for (std::vector<std::vector<int>>::iterator it = vert_to_face_map_.begin();
 		it != vert_to_face_map_.end(); ++it)
 		it->shrink_to_fit();
-}
-
-bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
-	Eigen::Vector3f & perspective_point, Eigen::Vector3f & sym_axis)
-{
-	const std::vector<int> &circuit = face.const_circuit();
-	int N = circuit.size();
-
-	std::ofstream out("D:\\Libraries\\matlab_tools\\broyden\\circuit.csv");
-	if (out.is_open())
-	{
-		if (!circuit.empty())
-		{
-			out << circuit.front();
-			for (int i = 1; i < circuit.size(); i++)
-				out << "," << circuit[i];
-			out << std::endl;
-		}
-		out.close();
-	}
-
-	Engine *ep;
-	if (!(ep = engOpen("\0"))) //启动matlab 引擎
-	{
-		std::cerr << "Initilizing Reconstructor failed." << std::endl;
-		return false;
-	}
-	else
-		engSetVisible(ep, false); // 设置窗口不可见
-
-	engEvalString(ep, "cd \'D:\\Libraries\\matlab_tools\\broyden\';");
-	engEvalString(ep, "perspective_symmetry();");
-
-	engClose(ep);
-
-	std::ifstream in("D:\\Libraries\\matlab_tools\\broyden\\perspective_symmetry.csv");
-	if (in.is_open())
-	{
-		std::string line;
-		std::vector<std::string> line_split;
-		std::getline(in, line);
-		boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
-		perspective_point[2] = std::stof(line_split[2]);
-		if (std::abs(perspective_point[2]) < 1.0e-8)
-		{
-			in.close();
-			return false;
-		}
-		perspective_point[0] = std::stof(line_split[0]);
-		perspective_point[1] = std::stof(line_split[1]);
-
-		std::getline(in, line);
-		boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
-		sym_axis[0] = std::stof(line_split[0]);
-		sym_axis[1] = std::stof(line_split[1]);
-		sym_axis[2] = std::stof(line_split[2]);
-
-		in.close();
-	}
-	else
-		return false;
-
-	return true;
 }
 
 Eigen::MatrixXf ConstraintsGenerator::form_S(const Eigen::Vector3f & v1, const Eigen::Vector3f & v2)
@@ -591,13 +559,13 @@ void ConstraintsGenerator::output_constraints()
 		out.close();
 	}
 
-	std::string B_path = output_dir + "B.csv";
-	out.open(B_path.c_str());
-	if (out.is_open())
-	{
-		out << B_.format(CSVFormat);
-		out.close();
-	}
+	//std::string B_path = output_dir + "B.csv";
+	//out.open(B_path.c_str());
+	//if (out.is_open())
+	//{
+	//	out << B_.format(CSVFormat);
+	//	out.close();
+	//}
 
 	std::string C_path = output_dir + "C.csv";
 	out.open(C_path.c_str());
