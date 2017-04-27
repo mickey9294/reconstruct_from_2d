@@ -135,7 +135,7 @@ void ConstraintsGenerator::add_connectivity_constraint()
 
 void ConstraintsGenerator::add_perspective_symmetry_constraint()
 {
-	std::ofstream out("D:\\Libraries\\matlab_tools\\broyden\\circuits.txt");
+	std::ofstream out("..\\matlab\\circuits.txt");
 	if (out.is_open())
 	{
 		for (std::vector<PlanarFace>::iterator f_it = faces_.begin(); f_it != faces_.end(); ++f_it)
@@ -153,13 +153,13 @@ void ConstraintsGenerator::add_perspective_symmetry_constraint()
 	else
 		engSetVisible(ep, false); // 设置窗口不可见
 	
-	engEvalString(ep, "cd \'D:\\Libraries\\matlab_tools\\broyden\';");
+	engEvalString(ep, "cd \'D:\\Projects\\reconstruct_from_2d\\matlab\';");
 	std::string sym_detect_cmd = "detect_perspective_syms(" + std::to_string(faces_.size()) + ");";
 	engEvalString(ep, sym_detect_cmd.c_str());
 
 	engClose(ep);
 
-	std::ifstream in("D:\\Libraries\\matlab_tools\\broyden\\B.csv");
+	std::ifstream in("..\\matlab\\B.csv");
 	if (in.is_open())
 	{
 		std::list<Eigen::VectorXf> rows;
@@ -548,7 +548,7 @@ Eigen::Vector2f ConstraintsGenerator::get_line_direction(int line_id)
 void ConstraintsGenerator::output_constraints()
 {
 	std::ofstream out;
-	std::string output_dir = "D:\\Libraries\\matlab_tools\\broyden\\";
+	std::string output_dir = "..\\matlab\\";
 	Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
 
 	std::string A_path = output_dir + "A.csv";
@@ -604,7 +604,7 @@ void ConstraintsGenerator::output_constraints()
 void ConstraintsGenerator::output_environment()
 {
 	std::ofstream out;
-	out.open("D:\\Libraries\\matlab_tools\\broyden\\x0.csv");
+	out.open("..\\matlab\\x0.csv");
 	if (out.is_open())
 	{
 		for (std::vector<Eigen::Vector2f>::iterator vert_it = vertices_.begin(); vert_it != vertices_.end(); ++vert_it)
@@ -613,7 +613,7 @@ void ConstraintsGenerator::output_environment()
 		out.close();
 	}
 
-	out.open("D:\\Libraries\\matlab_tools\\broyden\\edges.csv");
+	out.open("..\\matlab\\edges.csv");
 	if (out.is_open())
 	{
 		for (std::vector<Line>::iterator e_it = edges_.begin(); e_it != edges_.end(); ++e_it)
@@ -621,7 +621,7 @@ void ConstraintsGenerator::output_environment()
 		out.close();
 	}
 
-	out.open("D:\\Libraries\\matlab_tools\\broyden\\vert_face_map.txt");
+	out.open("..\\matlab\\vert_face_map.txt");
 	if (out.is_open())
 	{
 		for (std::vector<std::vector<int>>::iterator v_it = vert_to_face_map_.begin();
@@ -638,7 +638,7 @@ void ConstraintsGenerator::output_environment()
 		out.close();
 	}
 
-	out.open("D:\\Libraries\\matlab_tools\\broyden\\face_parallel_groups.txt");
+	out.open("..\\matlab\\face_parallel_groups.txt");
 	if (out.is_open())
 	{
 		for (std::vector<std::list<std::pair<int, int>>>::iterator f_it = lines_parallel_to_faces_.begin();
@@ -657,7 +657,7 @@ void ConstraintsGenerator::output_environment()
 		out.close();
 	}
 
-	out.open("D:\\Libraries\\matlab_tools\\broyden\\f.csv");
+	out.open("..\\matlab\\f.csv");
 	if (out.is_open())
 	{
 		out << focal_length_ << std::endl;

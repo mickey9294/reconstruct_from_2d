@@ -87,7 +87,7 @@ std::string PlanarFace::circuit_string() const
 	std::stringstream ss;
 	ss << circuit_.front();
 	for (int i = 1; i < circuit_.size(); i++)
-		ss << "," << circuit_[i];
+		ss << " " << circuit_[i];
 
 	return ss.str();
 }

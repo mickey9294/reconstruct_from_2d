@@ -119,7 +119,7 @@ void MarkWidget::set_image_thumbnails()
 void MarkWidget::update_scene()
 {
 	QString update_file_path = QFileDialog::getOpenFileName(this, "Input Images",
-		"D:\\Libraries\\matlab_tools\\broyden", tr("Text File (*.txt *.csv)"));
+		"..\\matlab", tr("Text File (*.txt *.csv)"));
 
 	std::vector<Eigen::Vector2f> refined_vertices(displayWidget_->num_vertices());
 	std::ifstream in(update_file_path.toLocal8Bit().data());
