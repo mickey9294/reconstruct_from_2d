@@ -17,6 +17,9 @@ ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, float 
 	calibrator->calibrate(focal_length_, primary_point_);
 	Z0 = -2 * focal_length_;
 
+	width_ = w;
+	height_ = h;
+
 	calib_mat_.setIdentity();
 	calib_mat_(0, 0) = focal_length_;
 	calib_mat_(1, 1) = focal_length_;
@@ -60,6 +63,8 @@ ConstraintsGenerator::~ConstraintsGenerator()
 
 void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2f> &refined_vertices, Eigen::VectorXf &refined_q)
 {
+	output_environment();
+
 	add_connectivity_constraint();
 	add_perspective_symmetry_constraint();
 	add_fixing_vertex_contraint();
@@ -67,7 +72,6 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2f> &refined
 	add_orhogonal_corner_constraint();
 
 	output_constraints();
-	output_environment();
 
 	emit report_status("Adding constraints done.");
 
@@ -75,6 +79,15 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2f> &refined
 		equations_solver_.reset(new EquationsSolver());
 
 	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+
+	update_environment(refined_vertices);
+
+	emit report_status("Constraint refinement and joint optimization done.");
+
+	Reconstructor recon(focal_length_);
+	recon.reconstruct(vertices_, refined_q, vert_to_face_map_, faces_);
+
+	emit report_status("Reconstruction done.");
 }
 
 void ConstraintsGenerator::add_connectivity_constraint()
@@ -122,10 +135,14 @@ void ConstraintsGenerator::add_connectivity_constraint()
 
 void ConstraintsGenerator::add_perspective_symmetry_constraint()
 {
+	Eigen::Matrix3f K;
+	K.setIdentity();
+	K(0, 0) = focal_length_;
+	K(1, 1) = focal_length_;
 	for (std::vector<PlanarFace>::iterator face_it = faces_.begin(); face_it != faces_.end(); ++face_it)
 	{
-		Eigen::Vector3f pp, pas, pae;
-		perspective_symmetry_in_face(*face_it, pp, pas, pae);
+		Eigen::Vector3f perpective_point, sym_axis;
+		bool ret = perspective_symmetry_in_face(*face_it, perpective_point, sym_axis);
 	}
 
 	B_.setZero();
@@ -311,8 +328,8 @@ void ConstraintsGenerator::detect_symmetric_faces()
 {
 	for (int i = 0; i < faces_.size(); i++)
 	{
-		Eigen::Vector3f pp, as, ae;
-		bool ret = perspective_symmetry_in_face(faces_[i], pp, as, ae);
+		Eigen::Vector3f perspective_point, sym_axis;
+		bool ret = perspective_symmetry_in_face(faces_[i], perspective_point, sym_axis);
 	}
 }
 
@@ -324,6 +341,11 @@ void ConstraintsGenerator::set_parallel_groups(const std::list<std::vector<int>>
 		std::vector<int> group = *g_it;
 		parallel_groups_.push_back(group);
 	}
+}
+
+float ConstraintsGenerator::get_focal_length() const
+{
+	return focal_length_;
 }
 
 void ConstraintsGenerator::map_verts_to_face(const std::vector<PlanarFace>& faces, int num_vertices)
@@ -347,111 +369,64 @@ void ConstraintsGenerator::map_verts_to_face(const std::vector<PlanarFace>& face
 }
 
 bool ConstraintsGenerator::perspective_symmetry_in_face(const PlanarFace & face,
-	Eigen::Vector3f & perspective_point, Eigen::Vector3f & sym_axis_start, Eigen::Vector3f & sym_axis_end)
+	Eigen::Vector3f & perspective_point, Eigen::Vector3f & sym_axis)
 {
 	const std::vector<int> &circuit = face.const_circuit();
 	int N = circuit.size();
 
-	float min_ci = std::numeric_limits<float>::max();
-	Eigen::Matrix3f min_Hi;
-	for (int i = 0; i < N; i++)
+	std::ofstream out("D:\\Libraries\\matlab_tools\\broyden\\circuit.csv");
+	if (out.is_open())
 	{
-		if (i == 1)
-			continue;
-		Eigen::MatrixXf Si(3 * N, 9);
-		Eigen::MatrixXf X(3, N);
-		Eigen::MatrixXf X_star(3, N);
-		for (int k = 0; k < N; k++)
+		if (!circuit.empty())
 		{
-			Eigen::Vector3f x1, x2;
-			int x1_idx = (1 + k) % N;
-			x1.head(2) = vertices_[circuit[x1_idx]];
-			x1[2] = 1.0;
-			int x2_idx = (i - k) % N;
-			if (x2_idx < 0)
-				x2_idx = N + x2_idx;
-			x2.head(2) = vertices_[circuit[x2_idx]];
-			x2[2] = 1.0;
-
-			Si.block<3, 9>(3 * k, 0) = form_S(x1, x2);
-			X.block<3, 1>(0, k) = x1;
-			X_star.block<3, 1>(0, k) = x2;
+			out << circuit.front();
+			for (int i = 1; i < circuit.size(); i++)
+				out << "," << circuit[i];
+			out << std::endl;
 		}
-
-		Eigen::MatrixXf solution = Si.transpose() * Si;
-		Eigen::EigenSolver<Eigen::MatrixXf> es(solution);
-
-		Eigen::MatrixXf evalues = es.eigenvalues().real();
-		Eigen::MatrixXf evectors = es.eigenvectors().real();
-
-		std::vector<float> evals(evalues.rows());
-		std::vector<int> eval_idx(evalues.rows());
-		for (int j = 0; j < evalues.rows(); j++)
-		{
-			evals[j] = evalues(j, 0);
-			eval_idx[j] = j;
-		}
-
-		std::sort(eval_idx.begin(), eval_idx.end(), [&evals](int a, int b) {
-			return evals[a] < evals[b];
-		});
-
-		Eigen::Matrix3f Hi;
-		Eigen::VectorXf hi = evectors.col(eval_idx.front());
-
-		for (int j = 0; j < 3; j++)
-		{
-			for (int t = 0; t < 3; t++)
-				Hi(j, t) = hi[3 * j + t];
-		}
-
-		//Hi = X_star * X.transpose() * ((X * X.transpose()).inverse());
-
-		float ci = 0;
-		for (int k = 0; k < N; k++)
-		{
-			Eigen::Vector3f x1, x2;
-			x1.head(2) = vertices_[circuit[(1 + k) % N]];
-			x1[2] = 1.0;
-			int x2_idx = (i - k) % N;
-			if (x2_idx < 0)
-				x2_idx = N + x2_idx;
-			x2.head(2) = vertices_[circuit[x2_idx]];
-			x2[2] = 1.0;
-
-			Eigen::Vector3f vec = Hi * x1 - x2;
-			ci += vec.norm();
-		}
-
-		if (ci < min_ci)
-		{
-			min_ci = ci;
-			min_Hi = Hi;
-
-			//Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
-			//std::ofstream out("../X.csv");
-			//out << X.format(CSVFormat);
-			//out.close();
-
-			//out.open("../X_star.csv");
-			//out << X_star.format(CSVFormat);
-			//out.close();
-
-			//out.open("../H.csv");
-			//out << Hi.format(CSVFormat);
-			//out.close();
-		}
+		out.close();
 	}
 
-	//if(min_ci >= t)
-	//return false;
+	Engine *ep;
+	if (!(ep = engOpen("\0"))) //启动matlab 引擎
+	{
+		std::cerr << "Initilizing Reconstructor failed." << std::endl;
+		return false;
+	}
+	else
+		engSetVisible(ep, false); // 设置窗口不可见
 
-	Eigen::EigenSolver<Eigen::Matrix3f> es(min_Hi);
-	Eigen::MatrixXcf eigen_values = es.eigenvalues();
-	Eigen::Matrix3cf eigen_vectors = es.eigenvectors();
+	engEvalString(ep, "cd \'D:\\Libraries\\matlab_tools\\broyden\';");
+	engEvalString(ep, "perspective_symmetry();");
 
-	std::cout << "Eigen values:\n" << eigen_values << std::endl;
-	std::cout << "Eigen vectors:\n" << eigen_vectors << std::endl;
+	engClose(ep);
+
+	std::ifstream in("D:\\Libraries\\matlab_tools\\broyden\\perspective_symmetry.csv");
+	if (in.is_open())
+	{
+		std::string line;
+		std::vector<std::string> line_split;
+		std::getline(in, line);
+		boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
+		perspective_point[2] = std::stof(line_split[2]);
+		if (std::abs(perspective_point[2]) < 1.0e-8)
+		{
+			in.close();
+			return false;
+		}
+		perspective_point[0] = std::stof(line_split[0]);
+		perspective_point[1] = std::stof(line_split[1]);
+
+		std::getline(in, line);
+		boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
+		sym_axis[0] = std::stof(line_split[0]);
+		sym_axis[1] = std::stof(line_split[1]);
+		sym_axis[2] = std::stof(line_split[2]);
+
+		in.close();
+	}
+	else
+		return false;
 
 	return true;
 }
@@ -729,5 +704,17 @@ int ConstraintsGenerator::factorial(int n)
 		fact *= i;
 
 	return fact;
+}
+
+void ConstraintsGenerator::update_environment(const std::vector<Eigen::Vector2f>& refined_vertices)
+{
+	for (int i = 0; i < vertices_.size(); i++)
+	{
+		vertices_[i][0] = refined_vertices[i][0];
+		vertices_[i][1] = refined_vertices[i][1];
+	}
+
+	std::shared_ptr<CameraClibrator> calibrator(new CameraClibrator(vertices_, edges_, parallel_groups_, width_, height_));
+	calibrator->calibrate(focal_length_, primary_point_);
 }
 

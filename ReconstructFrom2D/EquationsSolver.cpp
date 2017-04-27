@@ -37,7 +37,7 @@ void EquationsSolver::solve(int Nf, int Nv,
 	/* Load the result of optimization */
 	refined_vertices.resize(Nv);
 	std::ifstream in;
-	in.open("D:\\Libraries\\matlab_tools\\broyden\\xi+1.csv");
+	in.open("D:\\Libraries\\matlab_tools\\broyden\\xi_1.csv");
 	if (in.is_open())
 	{
 		std::string line;
@@ -57,7 +57,7 @@ void EquationsSolver::solve(int Nf, int Nv,
 		in.close();
 	}
 
-	in.open("D:\\Libraries\\matlab_tools\\broyden\\qi+1.csv");
+	in.open("D:\\Libraries\\matlab_tools\\broyden\\qi_1.csv");
 	if (in.is_open())
 	{
 		refined_q.resize(3 * Nf);
@@ -70,4 +70,6 @@ void EquationsSolver::solve(int Nf, int Nv,
 
 		in.close();
 	}
+
+	engClose(ep);
 }

@@ -71,6 +71,59 @@ const std::vector<std::vector<int>>& MarkGraphicsScene::const_face_circuits() co
 	return face_circuits_;
 }
 
+int MarkGraphicsScene::num_faces() const
+{
+	return face_circuits_.size();
+}
+
+int MarkGraphicsScene::num_vertices() const
+{
+	return vertex_list_.size();
+}
+
+void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2f>& refined_vertices)
+{
+	std::vector<Eigen::Vector2f>::const_iterator r_it = refined_vertices.begin();
+	std::list<QPointF>::iterator vert_it = vertex_list_.begin();
+	std::list<QGraphicsEllipseItem *>::iterator vi_it = vertex_item_stack_.begin();
+	std::list<QGraphicsTextItem *>::iterator ni_it = number_item_stack_.begin();
+
+	/* Clear faces' display */
+	for (std::list<QGraphicsPolygonItem *>::iterator f_it = face_item_stack_.begin();
+		f_it != face_item_stack_.end(); ++f_it)
+		graphics_scene_->removeItem(*f_it);
+	face_item_stack_.clear();
+
+	float half_w = (float)image_.width() / 2.0;
+	float half_h = (float)image_.height() / 2.0;
+
+	/* Update vertices */
+	for (; r_it != refined_vertices.end() && vert_it != vertex_list_.end()
+		&& vi_it != vertex_item_stack_.end() && ni_it != number_item_stack_.end();
+		++r_it, ++vert_it, ++vi_it, ++ni_it)
+	{
+		(*vi_it)->setRect(half_w + r_it->x() - 2, half_h - r_it->y() - 2, 4, 4);
+		(*vi_it)->setZValue(1.0);
+		(*ni_it)->setPos(half_w + r_it->x(), half_h - r_it->y());
+
+		vert_it->setX(half_w + r_it->x());
+		vert_it->setY(half_h - r_it->y());
+	}
+
+	/* Update edges */
+	std::list<Line>::iterator l_it = line_list_.begin();
+	std::list<QGraphicsLineItem *>::iterator li_it = line_item_stack_.begin();
+	for (; l_it != line_list_.end() && li_it != line_item_stack_.end(); ++l_it, ++li_it)
+	{
+		QPointF v1(half_w + refined_vertices[l_it->p1()].x(), half_h - refined_vertices[l_it->p1()].y());
+		QPointF v2(half_w + refined_vertices[l_it->p2()].x(), half_h - refined_vertices[l_it->p2()].y());
+		QLineF new_line(v1, v2);
+		(*li_it)->setLine(new_line);
+		(*li_it)->setPen(line_pen_);
+	}
+	update();
+}
+
 void MarkGraphicsScene::save_current_state()
 {
 	std::ofstream out(".\\state.txt");
@@ -176,6 +229,7 @@ void MarkGraphicsScene::load_current_state()
 		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it, ++idx)
 		{
 			vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 2, vert_it->y() - 2, 4, 4, vertex_pen_);
+			vertex_item_->setZValue(1.0);
 			vertex_item_stack_.push_back(vertex_item_);
 			number_item_ = graphics_scene_->addText(QString::number(idx), font);
 			number_item_->setPos(*vert_it);
@@ -286,9 +340,6 @@ void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circ
 		
 		QGraphicsPolygonItem * face_item = graphics_scene_->addPolygon(face, face_pen, face_brush);
 		face_item_stack_.push_back(face_item);
-
-		
-		
 	}
 
 	update();
@@ -412,6 +463,7 @@ void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 			vertex_->setX(event->pos().x());
 			vertex_->setY(event->pos().y());
 			vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 2, vertex_->y() - 2, 4, 4, vertex_pen_);
+			vertex_item_->setZValue(1.0);
 
 			QFont font;
 			font.setPointSize(12);
@@ -641,6 +693,37 @@ QPen MarkGraphicsScene::random_pen()
 	pen.setColor(random_color());
 	
 	return pen;
+}
+
+void MarkGraphicsScene::repaint_faces()
+{
+	int face_idx = 0;
+	for (std::vector<std::vector<int>>::const_iterator face_it = face_circuits_.begin();
+		face_it != face_circuits_.end(); ++face_it, ++face_idx)
+	{
+		QVector<QPointF> face_vertices;
+		face_vertices.reserve(face_it->size());
+		std::vector<QPointF> verts_vec(vertex_list_.begin(), vertex_list_.end());
+		for (std::vector<int>::const_iterator vert_it = face_it->begin(); vert_it != face_it->end(); vert_it++)
+		{
+			face_vertices.push_back(verts_vec[*vert_it]);
+		}
+
+		QPolygonF face(face_vertices);
+		int r = rand() % 255;
+		int g = rand() % 255;
+		int b = rand() % 255;
+		QColor face_color(r, g, b, 158);
+		QBrush face_brush;
+		face_brush.setColor(face_color);
+		face_brush.setStyle(Qt::SolidPattern);
+		QPen face_pen = Qt::NoPen;
+
+		QGraphicsPolygonItem * face_item = graphics_scene_->addPolygon(face, face_pen, face_brush);
+		face_item_stack_.push_back(face_item);
+	}
+
+	update();
 }
 
 void MarkGraphicsScene::undo()

@@ -5,37 +5,28 @@
 //#include <QMutex>
 //#include <QWaitCondition>
 
-#include <engine.h>
+#include <vector>
 #include <iostream>
+#include <fstream>
 
 #include <Eigen\Core>
 
-class Reconstructor : public QThread
+#include "PlanarFace.h"
+
+class Reconstructor : public QObject
 {
 	Q_OBJECT
 
 public:
 	Reconstructor(QObject *parent = 0);
-	Reconstructor(Eigen::Vector2f primary_point, Eigen::Vector2f focal_length);
+	Reconstructor(float focal_length, QObject *parent = 0);
 	~Reconstructor();
 
-	void reconstruct();
-	void set_cam_intrinsic_para(Eigen::Vector2f primary_point, Eigen::Vector2f focal_length);
-	void set_images_path_list(const QStringList &images_path_list);
-	void reconstruct_from_planes();
-
-signals:
-	void progress_report(int progress_id);
-	void reconstruct_finished();
-
-protected:
-	void run();
+	void reconstruct(const std::vector<Eigen::Vector2f> & verts_2d, const Eigen::VectorXf &q,
+		const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces);
 
 private:
-	Engine *ep;
-	Eigen::Vector2f primary_point_;
-	Eigen::Vector2f focal_length_;
-	QStringList images_path_list_;
+	float focal_length_;
 
-	void init_engine();
+	void output_shape(const std::vector<Eigen::Vector3f> &verts, const std::list<Eigen::Vector3i> &triangles);
 };

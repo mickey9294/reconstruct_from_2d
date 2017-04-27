@@ -39,6 +39,38 @@ CameraClibrator::CameraClibrator(const std::list<QPointF> &vertices, const std::
 	height_ = h;
 }
 
+CameraClibrator::CameraClibrator(const std::vector<Eigen::Vector2f>& vertices, const std::vector<Line>& lines, const std::vector<std::vector<int>>& parallel_groups, int w, int h)
+{
+	vertices_.resize(vertices.size());
+	int idx = 0;
+	for (std::vector<Eigen::Vector2f>::const_iterator v_it = vertices.begin(); v_it != vertices.end(); ++v_it, ++idx)
+	{
+		vertices_[idx][0] = v_it->x();
+		vertices_[idx][1] = v_it->y();
+	}
+
+	lines_.resize(lines.size());
+	idx = 0;
+	for (std::vector<Line>::const_iterator l_it = lines.begin(); l_it != lines.end(); ++l_it, ++idx)
+	{
+		lines_[idx].setP1(l_it->p1());
+		lines_[idx].setP2(l_it->p2());
+	}
+
+	parallel_groups_.resize(parallel_groups.size());
+	idx = 0;
+	for (std::vector<std::vector<int>>::const_iterator it = parallel_groups.begin(); it != parallel_groups.end(); ++it, ++idx)
+	{
+		int j = 0;
+		parallel_groups_[idx].resize(it->size());
+		for (std::vector<int>::const_iterator jt = it->begin(); jt != it->end(); ++jt, ++j)
+			parallel_groups_[idx][j] = *jt;
+	}
+
+	width_ = w;
+	height_ = h;
+}
+
 
 CameraClibrator::~CameraClibrator()
 {

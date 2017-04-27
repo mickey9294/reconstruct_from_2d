@@ -45,11 +45,17 @@ public:
 	const std::string & get_image_path() const;
 	const std::vector<std::vector<int>> &const_face_circuits() const;
 
+	int num_faces() const;
+	int num_vertices() const;
+
+	void update_scene(const std::vector<Eigen::Vector2f> &refined_vertices);
+
 	public slots:
 	void undo();
 	void reset();
 	void set_image(QString image_path);
 	void set_faces(const std::vector<std::vector<int>> &face_circuits);
+	void repaint_faces();
 	void change_state();
 	void finish_label_parallelism();
 	void save_current_state();
@@ -62,7 +68,6 @@ protected:
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
-	//void paintEvent(QPaintEvent *event);
 	void keyPressEvent(QKeyEvent *event);
 
 private:

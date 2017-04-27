@@ -20,6 +20,8 @@ public:
 	CameraClibrator();
 	CameraClibrator(const std::list<QPointF> &vertices, const std::list<Line> &lines,
 		const std::list<std::vector<int>> &parallel_groups, int w, int h);
+	CameraClibrator(const std::vector<Eigen::Vector2f> &vertices, const std::vector<Line> &lines,
+		const std::vector<std::vector<int>> &parallel_groups, int w, int h);
 	~CameraClibrator();
 
 	void calibrate(float &focal_length, Eigen::Vector2f &primary_point);

@@ -16,34 +16,34 @@ MarkWidget::MarkWidget(QWidget *parent)
 	displayWidget_->resize(800, 600);
 
 
-	QLabel* image_list_label = new QLabel("Images List");
+	image_list_label.reset(new QLabel("Images List"));
 	//image_list_label->setMaximumHeight(30);
-	QVBoxLayout * control_layout = new QVBoxLayout();
-	control_layout->addWidget(image_list_label);
+	control_layout.reset(new QVBoxLayout());
+	control_layout->addWidget(image_list_label.get());
 	control_layout->addWidget(imagesListWidget_.get());
 	control_layout->setAlignment(Qt::AlignTop);
-	QHBoxLayout * load_layout = new QHBoxLayout();
+	load_layout.reset(new QHBoxLayout());
 	load_layout->addStretch(0);
 	load_layout->addWidget(loadButton_.get());
 	load_layout->addStretch(0);
-	control_layout->addLayout(load_layout);
+	control_layout->addLayout(load_layout.get());
 
-	QVBoxLayout * display_layout = new QVBoxLayout();
-	QHBoxLayout * undo_layout = new QHBoxLayout();
+	display_layout.reset(new QVBoxLayout());
+	undo_layout.reset(new QHBoxLayout());
 	undo_layout->addWidget(detectPlanesButton_.get());
 	undo_layout->addWidget(addConstraintsButton_.get());
 	undo_layout->addStretch(0.5);
 	undo_layout->addWidget(resetButton_.get());
 	undo_layout->addWidget(undoButton_.get());
 	display_layout->addWidget(displayWidget_.get());
-	display_layout->addLayout(undo_layout);
+	display_layout->addLayout(undo_layout.get());
 
-	QHBoxLayout *central_layout = new QHBoxLayout();
+	central_layout.reset(new QHBoxLayout());
 	central_layout->setSpacing(20);
-	central_layout->addLayout(control_layout);
-	central_layout->addLayout(display_layout);
+	central_layout->addLayout(control_layout.get());
+	central_layout->addLayout(display_layout.get());
 
-	setLayout(central_layout);
+	setLayout(central_layout.get());
 
 	connect(loadButton_.get(), SIGNAL(clicked()), this, SLOT(load_images()));
 	connect(resetButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(reset()));
@@ -54,7 +54,6 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(this, SIGNAL(change_label_state()), displayWidget_.get(), SLOT(change_state()));
 	connect(this, SIGNAL(stop_labeling()), displayWidget_.get(), SLOT(finish_label_parallelism()));
 	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
-	connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent, SLOT(receive_status(QString)));
 }
 
 MarkWidget::~MarkWidget()
@@ -117,6 +116,31 @@ void MarkWidget::set_image_thumbnails()
 	}
 }
 
+void MarkWidget::update_scene()
+{
+	QString update_file_path = QFileDialog::getOpenFileName(this, "Input Images",
+		"D:\\Libraries\\matlab_tools\\broyden", tr("Text File (*.txt *.csv)"));
+
+	std::vector<Eigen::Vector2f> refined_vertices(displayWidget_->num_vertices());
+	std::ifstream in(update_file_path.toLocal8Bit().data());
+	if (in.is_open())
+	{
+		std::string line;
+		std::vector<std::string> line_split;
+		for (int i = 0; i < displayWidget_->num_vertices(); i++)
+		{
+			std::getline(in, line);
+			boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
+			refined_vertices[i][0] = std::stof(line_split[0]);
+			refined_vertices[i][1] = std::stof(line_split[1]);
+		}
+
+		in.close();
+	}
+
+	displayWidget_->update_scene(refined_vertices);
+}
+
 void MarkWidget::set_mark_image(QListWidgetItem * item)
 {
 	QString title = item->text();
@@ -127,19 +151,27 @@ void MarkWidget::set_mark_image(QListWidgetItem * item)
 
 void MarkWidget::detect_planes()
 {
-	std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
-	std::vector<std::vector<int>>face_circuits;
-	faces_detector->identify_all_faces(face_circuits);
-	displayWidget_->set_faces(face_circuits);
+	if (displayWidget_->num_faces() == 0)
+	{
+		std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
+		std::vector<std::vector<int>>face_circuits;
+		faces_detector->identify_all_faces(face_circuits);
+		displayWidget_->set_faces(face_circuits);
+	}
+	else
+		displayWidget_->repaint_faces();
 
 	emit stop_labeling();
 }
 
 void MarkWidget::generate_constraints()
 {
-	if(!constraints_generator_)
-		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), 1024, 768, displayWidget_->get_vertices(),
-			displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups(), this));
+	if (!constraints_generator_)
+	{
+		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
+			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups(), this));
+		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent(), SLOT(receive_status(QString)));
+	}
 	
 	std::vector<Eigen::Vector2f> refined_vertices;
 	Eigen::VectorXf refined_q;

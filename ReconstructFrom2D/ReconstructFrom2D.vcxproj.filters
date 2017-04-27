@@ -136,6 +136,15 @@
     <ClCompile Include="ConstraintsGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_DisplayWidget.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_DisplayWidget.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="DisplayWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ReconstructFrom2D.h">
@@ -160,6 +169,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="ConstraintsGenerator.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="DisplayWidget.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

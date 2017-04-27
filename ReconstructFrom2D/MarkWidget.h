@@ -30,6 +30,7 @@ public:
 	void generate_constraints();
 	void save_scene_state();
 	void load_scene_state();
+	void update_scene();
 
 signals:
 	void set_image(QString image_path);
@@ -48,6 +49,13 @@ private:
 	std::shared_ptr<QPushButton> addConstraintsButton_;
 	std::shared_ptr<QListWidget> imagesListWidget_;
 	std::shared_ptr<ConstraintsGenerator> constraints_generator_;
+
+	std::shared_ptr<QLabel> image_list_label;
+	std::shared_ptr<QVBoxLayout> control_layout;
+	std::shared_ptr<QHBoxLayout> load_layout;
+	std::shared_ptr<QVBoxLayout> display_layout;
+	std::shared_ptr<QHBoxLayout> undo_layout;
+	std::shared_ptr<QHBoxLayout> central_layout;
 
 	QStringList images_path_list_;
 

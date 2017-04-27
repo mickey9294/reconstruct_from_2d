@@ -26,6 +26,7 @@
 #include "ArtecProcessor.h"
 #include "MarkGraphicsScene.h"
 #include "MarkWidget.h"
+#include "DisplayWidget.h"
 
 class ReconstructFrom2D : public QMainWindow
 {
@@ -61,6 +62,7 @@ private:
 
 	std::shared_ptr<QTabWidget> tabWidget_;
 	std::shared_ptr<MarkWidget> markWidget_;
+	std::shared_ptr<DisplayWidget> displayWidget_;
 
 	std::shared_ptr<QMenu> menuFile;
 	std::shared_ptr<QAction> actionOpen;
@@ -69,6 +71,7 @@ private:
 	std::shared_ptr<QMenu> menuScene;
 	std::shared_ptr<QAction> actionLoadState;
 	std::shared_ptr<QAction> actionSaveState;
+	std::shared_ptr<QAction> actionUpdateScene;
 	
 	//void set_image_thumbnails();
 	void initUI();

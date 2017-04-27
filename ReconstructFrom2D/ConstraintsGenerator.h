@@ -13,10 +13,13 @@
 #include <Eigen\Core>
 #include <Eigen\Eigenvalues>
 
+#include <engine.h>
+
 #include "PlanarFace.h"
 #include "Line.h"
 #include "CameraClibrator.h"
 #include "EquationsSolver.h"
+#include "Reconstructor.h"
 
 class ConstraintsGenerator : public QObject
 {
@@ -44,11 +47,15 @@ public:
 
 	void set_parallel_groups(const std::list<std::vector<int>> &parallel_group);
 
+	float get_focal_length() const;
+
 signals:
 	void report_status(QString msg);
 
 private:
 	float focal_length_;
+	float width_;
+	float height_;
 	Eigen::Vector2f primary_point_;
 	Eigen::Matrix3f calib_mat_;
 
@@ -70,10 +77,11 @@ private:
 
 	std::shared_ptr<EquationsSolver> equations_solver_;
 
+
 	void map_verts_to_face(const std::vector<PlanarFace> &faces, int num_vertices);
 
 	bool perspective_symmetry_in_face(const PlanarFace &face, Eigen::Vector3f &perspective_point,
-		Eigen::Vector3f &sym_axis_start, Eigen::Vector3f &sym_axis_end);
+		Eigen::Vector3f &sym_axis);
 
 	Eigen::MatrixXf form_S(const Eigen::Vector3f &v1, const Eigen::Vector3f &v2);
 
@@ -96,4 +104,6 @@ private:
 	void output_environment();
 
 	int factorial(int n);
+
+	void update_environment(const std::vector<Eigen::Vector2f> &refined_vertices);
 };

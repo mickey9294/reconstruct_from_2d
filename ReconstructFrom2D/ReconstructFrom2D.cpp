@@ -12,6 +12,7 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 	connect(actionSaveState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(save_scene_state()));
 	connect(actionLoadState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_scene_state()));
 	connect(this, SIGNAL(set_images_path_list(QStringList)), markWidget_.get(), SLOT(set_images_path(QStringList)));
+	connect(actionUpdateScene.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(update_scene()));
 
 	primary_point_.setZero();
 	focal_length_.setZero();
@@ -21,13 +22,16 @@ void ReconstructFrom2D::initUI()
 {
 	tabWidget_.reset(new QTabWidget());
 	markWidget_.reset(new MarkWidget(this));
+	displayWidget_.reset(new DisplayWidget(this));
 	tabWidget_->addTab(markWidget_.get(), "Start");
+	tabWidget_->addTab(displayWidget_.get(), "Result");
 
 	actionOpen.reset(new QAction(tr("&Open"), this));
 	actionSave.reset(new QAction(tr("&Save"), this));
 	actionExit.reset(new QAction(tr("&Exit"), this));
 	actionSaveState.reset(new QAction(tr("&Save Scene State"), this));
 	actionLoadState.reset(new QAction(tr("&Load Scene State"), this));
+	actionUpdateScene.reset(new QAction(tr("&Update Scene"), this));
 	menuFile.reset(menuBar()->addMenu(tr("&File")));
 	menuScene.reset(menuBar()->addMenu(tr("&Scene")));
 	menuFile->addAction(actionOpen.get());
@@ -36,6 +40,7 @@ void ReconstructFrom2D::initUI()
 	menuFile->addAction(actionExit.get());
 	menuScene->addAction(actionSaveState.get());
 	menuScene->addAction(actionLoadState.get());
+	menuScene->addAction(actionUpdateScene.get());
 
 	// 设置显示当前布局
 	setCentralWidget(tabWidget_.get());
