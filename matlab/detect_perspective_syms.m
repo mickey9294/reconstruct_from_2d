@@ -17,7 +17,7 @@ acc = @(x) x+1;
 face_circuits = cellfun(acc, face_circuits, 'UniformOutput', false);
 f = load('f.csv');
 
-K = [f,0,0;0,f,0;0,0,1];
+K = [-f,0,0;0,-f,0;0,0,1];
 
 B = [];
 for i = 1:Nf

@@ -52,6 +52,7 @@ for i = 1:N
     if ci < min_ci
         min_ci = ci;
         min_Hi = Hi;
+        min_i = i;
     end
 end
 
@@ -64,11 +65,11 @@ else
     [hevec, heval] = eig(min_Hi);
     heval = diag(heval);
     
-    if abs(heval(2)-heval(3))<abs(heval(2)-heval(1))&&abs(heval(2)-heval(3))>abs(heval(3)-heval(1))
+    if abs(heval(2)-heval(3))<abs(heval(2)-heval(1))&&abs(heval(2)-heval(3))<abs(heval(3)-heval(1))
         psx = hevec(:, 1);
         psl_p1 = hevec(:,2);
         psl_p2 = hevec(:,3);
-    elseif abs(heval(1)-heval(3))<abs(heval(2)-heval(1))&&abs(heval(1)-heval(3))>abs(heval(3)-heval(2))
+    elseif abs(heval(1)-heval(3))<abs(heval(2)-heval(1))&&abs(heval(1)-heval(3))<abs(heval(3)-heval(2))
         psx = hevec(:,2);
         psl_p1 = hevec(:,1);
         psl_p2 = hevec(:,3);

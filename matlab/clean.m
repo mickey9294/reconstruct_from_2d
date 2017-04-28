@@ -1,0 +1,2 @@
+delete *.csv
+delete *.txt

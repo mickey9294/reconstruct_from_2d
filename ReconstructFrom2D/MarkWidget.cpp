@@ -176,6 +176,8 @@ void MarkWidget::generate_constraints()
 	std::vector<Eigen::Vector2f> refined_vertices;
 	Eigen::VectorXf refined_q;
 	constraints_generator_->add_constraints(refined_vertices, refined_q);
+
+	displayWidget_->update_scene(refined_vertices);
 }
 
 void MarkWidget::save_scene_state()

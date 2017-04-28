@@ -25,7 +25,7 @@ void EquationsSolver::solve(int Nf, int Nv,
 		engSetVisible(ep, false); // 设置窗口不可见
 	}
 
-	engEvalString(ep, "cd \'D:\\Projects\\reconstruct_from_2d\\matlab\\matlab\';");
+	engEvalString(ep, "cd \'D:\\Projects\\reconstruct_from_2d\\matlab\';");
 
 	/* Reconstruct the rough 3D shape */
 	std::string rough_recon_cmd = "solve_O3dr(" + std::to_string(Nf) + ");";

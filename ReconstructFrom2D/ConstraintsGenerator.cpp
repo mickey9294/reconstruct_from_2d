@@ -12,17 +12,11 @@ ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, float 
 	QObject *parent)
 	: QObject(parent)
 {
-	std::shared_ptr<CameraClibrator> calibrator(new CameraClibrator(vertices, edges, parallel_group, w, h));
-
-	calibrator->calibrate(focal_length_, primary_point_);
-	Z0 = -2 * focal_length_;
+	primary_point_[0] = w / 2.0;
+	primary_point_[1] = h / 2.0;
 
 	width_ = w;
 	height_ = h;
-
-	calib_mat_.setIdentity();
-	calib_mat_(0, 0) = focal_length_;
-	calib_mat_(1, 1) = focal_length_;
 
 	vertices_.resize(vertices.size());
 	edges_.resize(edges.size());
@@ -54,6 +48,15 @@ ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, float 
 	set_parallel_groups(parallel_group);
 
 	map_edges_to_face();
+
+	std::shared_ptr<CameraClibrator> calibrator(new CameraClibrator(vertices_, edges_, parallel_groups_, w, h));
+
+	calibrator->calibrate(focal_length_, primary_point_);
+	Z0 = -1.5 * focal_length_;
+
+	calib_mat_.setIdentity();
+	calib_mat_(0, 0) = -focal_length_;
+	calib_mat_(1, 1) = -focal_length_;
 }
 
 
@@ -210,15 +213,17 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 
 	std::list<Eigen::VectorXf> Crows;
 
-	for (std::vector<PlanarFace>::iterator face_it = faces_.begin(); face_it != faces_.end(); ++face_it)
+	for (std::vector<PlanarFace>::iterator face_it = faces_.begin(); face_it != faces_.end(); ++face_it)  /* Each face */
 	{
 		int face_id = face_it->id();
 		const std::list<int> & edges_list = face_it->const_edges();
 
 		std::unordered_set<int> used_parallel_groups;
 
+		/* Find out all lines pairs parallel to the face */
 		for (std::list<int>::const_iterator e_it = edges_list.begin(); e_it != edges_list.end(); ++e_it)
 		{
+			/* Traverse all edges on this face, if another line is parallel to this edge, then the line is parallel to the face */
 			int line_id = *e_it;
 			int parallel_group_id = edge_parallel_group_map[line_id];
 
@@ -229,10 +234,13 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 
 			if (parallel_group_id >= 0)
 			{
-				std::vector<int> &parallel_group = parallel_groups_[parallel_group_id];
+				std::vector<int> &parallel_group = parallel_groups_[parallel_group_id];  /* all lines parallel to the current checking edge */
 				if (parallel_group.size() < 3)
 					continue;
 
+				/* Find all lines pairs of the current parallel lines group that
+				 * 1. both two lines of the pair are parallel to the face(the current checking line) 
+				 * 2. both two lines of the pair are not on the face */
 				for (int i = 0; i < parallel_group.size(); i++)
 				{
 					int paraline_1 = parallel_group[i];
@@ -251,7 +259,7 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 								Eigen::Vector3f line_1 = get_line_equation(paraline_1);
 								Eigen::Vector3f line_2 = get_line_equation(paraline_2);
 								Eigen::Vector3f v = line_1.cross(line_2);
-								assert(std::abs(v[2]) > 1e-4);
+								assert(std::abs(v[2]) > 1e-8);
 								v[0] /= v[2];
 								v[1] /= v[2];
 								v[2] = 1.0;
@@ -493,7 +501,7 @@ Eigen::Vector3f ConstraintsGenerator::get_line_equation(int line_id)
 	Eigen::Vector2f &v1 = vertices_[v1_idx];
 	Eigen::Vector2f &v2 = vertices_[v2_idx];
 
-	if (std::abs(v1.x() - v2.x()) < 1e-4)
+	if (std::abs(v1.x() - v2.x()) < 1e-6)
 	{
 		return Eigen::Vector3f(1, 0, -v1.x());
 	}
@@ -502,6 +510,13 @@ Eigen::Vector3f ConstraintsGenerator::get_line_equation(int line_id)
 	float a = slope;
 	float b = -1;
 	float c = -slope * v1.x() + v1.y();
+
+	if (std::abs(c) > 1e-8)
+	{
+		a /= c;
+		b /= c;
+		c = 1.0;
+	}
 
 	return Eigen::Vector3f(a, b, c);
 }

@@ -39,7 +39,8 @@ CameraClibrator::CameraClibrator(const std::list<QPointF> &vertices, const std::
 	height_ = h;
 }
 
-CameraClibrator::CameraClibrator(const std::vector<Eigen::Vector2f>& vertices, const std::vector<Line>& lines, const std::vector<std::vector<int>>& parallel_groups, int w, int h)
+CameraClibrator::CameraClibrator(const std::vector<Eigen::Vector2f>& vertices, const std::vector<Line>& lines, 
+	const std::vector<std::vector<int>>& parallel_groups, int w, int h)
 {
 	vertices_.resize(vertices.size());
 	int idx = 0;
@@ -108,7 +109,7 @@ void CameraClibrator::calibrate(float & focal_length, Eigen::Vector2f & primary_
 				Eigen::Vector3f line_2 = get_line_equation(line_id_2);
 
 				Eigen::Vector3f vp = line_1.cross(line_2);
-				assert(std::abs(vp[2]) > 1e-4);
+				assert(std::abs(vp[2]) > 1e-8);
 
 				vp[0] /= vp[2];
 				vp[1] /= vp[2];
@@ -119,7 +120,7 @@ void CameraClibrator::calibrate(float & focal_length, Eigen::Vector2f & primary_
 			}
 		}
 
-		vanishing_point /= vp_count;
+		vanishing_point /= (float)vp_count;
 		vp_list.push_back(vanishing_point);
 	}
 
@@ -165,6 +166,13 @@ Eigen::Vector3f CameraClibrator::get_line_equation(int line_id)
 	float a = slope;
 	float b = -1;
 	float c = -slope * v1.x() + v1.y();
+	
+	if(std::abs(c) > 1.0e-8)
+	{
+		a /= c;
+		b /= c;
+		c = 1.0;
+	}
 
 	return Eigen::Vector3f(a, b, c);
 }
