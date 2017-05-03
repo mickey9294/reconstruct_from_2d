@@ -42,13 +42,17 @@ public:
 	std::list<QPointF> & get_vertices();
 	std::list<Line> & get_edges();
 	std::list<std::vector<int>> & get_parallel_groups();
+	QPixmap & get_image();
 	const std::string & get_image_path() const;
 	const std::vector<std::vector<int>> &const_face_circuits() const;
 
 	int num_faces() const;
 	int num_vertices() const;
 
-	void update_scene(const std::vector<Eigen::Vector2f> &refined_vertices);
+	void update_scene(const std::vector<Eigen::Vector2d> &refined_vertices);
+
+	void set_precise_vertices(const std::vector<int> &precise_id, const std::vector<QPointF> &precise_vertices);
+	std::vector<int> &get_precises_vertices();
 
 	public slots:
 	void undo();
@@ -81,6 +85,7 @@ private:
 	QPixmap image_;
 	QPen line_pen_;
 	QPen vertex_pen_;
+	QBrush vertex_brush_;
 	QPen focus_pen_;
 	QPen parallel_pen_;
 
@@ -91,9 +96,9 @@ private:
 
 	State state_;
 
-	Eigen::MatrixXf N_;  /* Each column represents the direction vector of an edge */
-	Eigen::MatrixXf A_;  /* Each column represents the first end point of an edge */
-	Eigen::MatrixXf B_; /* Each column represents the second end point of an edge */
+	Eigen::MatrixXd N_;  /* Each column represents the direction vector of an edge */
+	Eigen::MatrixXd A_;  /* Each column represents the first end point of an edge */
+	Eigen::MatrixXd B_; /* Each column represents the second end point of an edge */
 	 
 	std::shared_ptr<QGraphicsScene> graphics_scene_;
 	std::shared_ptr<QGraphicsPixmapItem> pixmap_item_;
@@ -114,6 +119,7 @@ private:
 	std::list<int> mode_stack_;
 
 	std::vector<std::vector<int>> face_circuits_;
+	std::vector<int> precise_verts_id_;
 
 	//void makeItemsControllable(bool areControllable);
 	int find_nearest_vertex(const QPointF &point, QPointF &nearest_vertex);

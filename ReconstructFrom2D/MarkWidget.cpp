@@ -6,6 +6,8 @@ MarkWidget::MarkWidget(QWidget *parent)
 	undoButton_.reset(new QPushButton("Undo"));
 	loadButton_.reset(new QPushButton("Load Images"));
 	resetButton_.reset(new QPushButton("Reset"));
+	reconButton_.reset(new QPushButton("Reconstruct From File"));
+	recognitionButton_.reset(new QPushButton("Recognize Precise Vertices"));
 	detectPlanesButton_.reset(new QPushButton("Detect Planes"));
 	addConstraintsButton_.reset(new QPushButton("Add Constraints"));
 	displayWidget_.reset(new MarkGraphicsScene());
@@ -30,8 +32,10 @@ MarkWidget::MarkWidget(QWidget *parent)
 
 	display_layout.reset(new QVBoxLayout());
 	undo_layout.reset(new QHBoxLayout());
+	undo_layout->addWidget(recognitionButton_.get());
 	undo_layout->addWidget(detectPlanesButton_.get());
 	undo_layout->addWidget(addConstraintsButton_.get());
+	undo_layout->addWidget(reconButton_.get());
 	undo_layout->addStretch(0.5);
 	undo_layout->addWidget(resetButton_.get());
 	undo_layout->addWidget(undoButton_.get());
@@ -49,7 +53,9 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(resetButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(reset()));
 	connect(undoButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(undo()));
 	connect(addConstraintsButton_.get(), SIGNAL(clicked()), this, SLOT(generate_constraints()));
+	connect(recognitionButton_.get(), SIGNAL(clicked()), this, SLOT(recognize_precise_vertices()));
 	connect(imagesListWidget_.get(), SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(set_mark_image(QListWidgetItem *)));
+	connect(reconButton_.get(), SIGNAL(clicked()), this, SLOT(recon_from_file()));
 	connect(this, SIGNAL(set_image(QString)), displayWidget_.get(), SLOT(set_image(QString)));
 	connect(this, SIGNAL(change_label_state()), displayWidget_.get(), SLOT(change_state()));
 	connect(this, SIGNAL(stop_labeling()), displayWidget_.get(), SLOT(finish_label_parallelism()));
@@ -63,6 +69,9 @@ MarkWidget::~MarkWidget()
 
 void MarkWidget::reset_display()
 {
+	if (constraints_generator_)
+		constraints_generator_->reset();
+	displayWidget_->reset();
 }
 
 void MarkWidget::load_images()
@@ -121,7 +130,7 @@ void MarkWidget::update_scene()
 	QString update_file_path = QFileDialog::getOpenFileName(this, "Input Images",
 		"..\\matlab", tr("Text File (*.txt *.csv)"));
 
-	std::vector<Eigen::Vector2f> refined_vertices(displayWidget_->num_vertices());
+	std::vector<Eigen::Vector2d> refined_vertices(displayWidget_->num_vertices());
 	std::ifstream in(update_file_path.toLocal8Bit().data());
 	if (in.is_open())
 	{
@@ -141,6 +150,27 @@ void MarkWidget::update_scene()
 	displayWidget_->update_scene(refined_vertices);
 }
 
+void MarkWidget::recon_from_file()
+{
+	QString q_path = QFileDialog::getOpenFileName(this, "Shape Vector",
+		"..\\matlab", tr("CSV File (*.csv)"));
+
+	constraints_generator_->reconstruct_from_file(q_path);
+}
+
+void MarkWidget::recognize_precise_vertices()
+{
+	VertexRecognition recognition;
+	recognition.set_image(displayWidget_->get_image());
+	recognition.set_sketch_vertices(displayWidget_->get_vertices());
+
+	std::vector<int> precise_vertices_id;
+	std::vector<QPointF> precise_vertices;
+	recognition.get_precise_vertices(precise_vertices_id, precise_vertices);
+
+	displayWidget_->set_precise_vertices(precise_vertices_id, precise_vertices);
+}
+
 void MarkWidget::set_mark_image(QListWidgetItem * item)
 {
 	QString title = item->text();
@@ -151,15 +181,15 @@ void MarkWidget::set_mark_image(QListWidgetItem * item)
 
 void MarkWidget::detect_planes()
 {
-	if (displayWidget_->num_faces() == 0)
-	{
-		std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
-		std::vector<std::vector<int>>face_circuits;
-		faces_detector->identify_all_faces(face_circuits);
-		displayWidget_->set_faces(face_circuits);
-	}
+	//if (displayWidget_->num_faces() == 0)
+	//{
+	std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
+	std::vector<std::vector<int>>face_circuits;
+	faces_detector->identify_all_faces(face_circuits);
+	displayWidget_->set_faces(face_circuits);
+	/*}
 	else
-		displayWidget_->repaint_faces();
+		displayWidget_->repaint_faces();*/
 
 	emit stop_labeling();
 }
@@ -169,15 +199,20 @@ void MarkWidget::generate_constraints()
 	if (!constraints_generator_)
 	{
 		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
-			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups(), this));
+			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), 
+			displayWidget_->get_parallel_groups(), displayWidget_->get_precises_vertices(), this));
 		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent(), SLOT(receive_status(QString)));
 	}
+	else
+		constraints_generator_->reset(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
+			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups());
 	
-	std::vector<Eigen::Vector2f> refined_vertices;
-	Eigen::VectorXf refined_q;
+	std::vector<Eigen::Vector2d> refined_vertices;
+	Eigen::VectorXd refined_q;
 	constraints_generator_->add_constraints(refined_vertices, refined_q);
 
-	displayWidget_->update_scene(refined_vertices);
+	if(!refined_vertices.empty())
+		displayWidget_->update_scene(refined_vertices);
 }
 
 void MarkWidget::save_scene_state()

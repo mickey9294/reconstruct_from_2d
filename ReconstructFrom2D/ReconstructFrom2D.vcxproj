@@ -125,6 +125,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Line.cpp" />
+    <ClCompile Include="lsd.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MarkGraphicsScene.cpp" />
     <ClCompile Include="MarkWidget.cpp" />
@@ -137,6 +138,7 @@
     <ClCompile Include="Reconstructor.cpp" />
     <ClCompile Include="ShapeModel.cpp" />
     <ClCompile Include="SketchGraph.cpp" />
+    <ClCompile Include="VertexRecognition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ReconstructFrom2D.h">
@@ -152,6 +154,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArtecProcessor.h" />
+    <ClInclude Include="lsd.h" />
+    <ClInclude Include="VertexRecognition.h" />
     <CustomBuild Include="MarkGraphicsScene.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing MarkGraphicsScene.h...</Message>

@@ -59,12 +59,12 @@ int PlanarFace::id() const
 	return id_;
 }
 
-void PlanarFace::set_normal(const Eigen::Vector3f & normal)
+void PlanarFace::set_normal(const Eigen::Vector3d & normal)
 {
 	normal_ = normal;
 }
 
-Eigen::Vector3f PlanarFace::get_normal() const
+Eigen::Vector3d PlanarFace::get_normal() const
 {
 	return normal_;
 }

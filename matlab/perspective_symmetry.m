@@ -1,4 +1,4 @@
-function [psx, psl, check] = perspective_symmetry(vertices, face_circuit)
+function [psx, psl, sym_point, check] = perspective_symmetry(vertices, face_circuit)
 %PERSPECTIVE_SYMMETRY detect perspective symmetry in a planar face
 %   Input arguments:
 %       vertices        2d vertices coordinates
@@ -60,6 +60,7 @@ if min_ci > 0.01
     psx = zeros(3,1);
     psl = zeros(3,1);
     check = false;
+    sym_point = -1;
     return;
 else
     [hevec, heval] = eig(min_Hi);
@@ -82,6 +83,7 @@ else
         psx = psx / psx(3);
     else
         check = false;
+        sym_point = -1;
         return;
     end
     if abs(psl_p1(3)) > 1.0e-8 && abs(psl_p2(3)) > 1.0e-8
@@ -89,8 +91,10 @@ else
         psl_p2 = psl_p2 / psl_p2(3);
         psl = line_equation(psl_p1, psl_p2);
         check = true;
+        sym_point = min_i;
     else
         check = false;
+        sym_point = -1;
     end
 end
 

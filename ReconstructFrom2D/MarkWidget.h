@@ -12,6 +12,7 @@
 #include "MarkGraphicsScene.h"
 #include "FacesIdentifier.h"
 #include "ConstraintsGenerator.h"
+#include "VertexRecognition.h"
 
 class MarkWidget : public QWidget
 {
@@ -31,6 +32,8 @@ public:
 	void save_scene_state();
 	void load_scene_state();
 	void update_scene();
+	void recon_from_file();
+	void recognize_precise_vertices();
 
 signals:
 	void set_image(QString image_path);
@@ -45,8 +48,10 @@ private:
 	std::shared_ptr<QPushButton> undoButton_;
 	std::shared_ptr<QPushButton> loadButton_;
 	std::shared_ptr<QPushButton> resetButton_;
+	std::shared_ptr<QPushButton> recognitionButton_;
 	std::shared_ptr<QPushButton> detectPlanesButton_;
 	std::shared_ptr<QPushButton> addConstraintsButton_;
+	std::shared_ptr<QPushButton> reconButton_;
 	std::shared_ptr<QListWidget> imagesListWidget_;
 	std::shared_ptr<ConstraintsGenerator> constraints_generator_;
 

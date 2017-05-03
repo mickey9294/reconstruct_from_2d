@@ -13,7 +13,7 @@ class MPFGraph
 {
 public:
 	MPFGraph();
-	MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vector<Eigen::Vector2f> &points);
+	MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vector<Eigen::Vector2d> &points);
 	MPFGraph(const MPFGraph &another);
 	~MPFGraph();
 
@@ -23,8 +23,8 @@ public:
 	std::vector<MPFVertex>::const_iterator const_vertices_end() const;
 	std::vector<std::list<int>>::const_iterator const_adj_list_begin() const;
 	std::vector<std::list<int>>::const_iterator const_adj_list_end() const;
-	std::vector<Eigen::Vector2f>::const_iterator const_points_begin() const;
-	std::vector<Eigen::Vector2f>::const_iterator const_points_end() const;
+	std::vector<Eigen::Vector2d>::const_iterator const_points_begin() const;
+	std::vector<Eigen::Vector2d>::const_iterator const_points_end() const;
 
 	int num_vertices() const;
 	int num_points() const;
@@ -37,7 +37,7 @@ public:
 
 private:
 	std::vector<MPFVertex> vertices_;
-	std::vector<Eigen::Vector2f> points_;
+	std::vector<Eigen::Vector2d> points_;
 	//std::vector<Line> edges_;
 	std::vector<std::list<int>> adjacency_list_;
 	Eigen::MatrixXi adjacency_mat_;

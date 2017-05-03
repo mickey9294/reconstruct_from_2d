@@ -11,11 +11,13 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	
 	graphics_scene_.reset(new QGraphicsScene(0,0,IMAGE_WIDTH,IMAGE_HEIGHT));
 
-	line_pen_.setWidth(2);
+	line_pen_.setWidth(3);
 	line_pen_.setColor(QColor(0, 0, 255));
 
-	vertex_pen_.setWidth(3);
+	vertex_pen_.setWidth(1);
 	vertex_pen_.setColor(QColor(255, 0, 0));
+	vertex_brush_.setColor(QColor(255, 0, 0));
+	vertex_brush_.setStyle(Qt::SolidPattern);
 
 	focus_pen_.setWidth(4);
 	focus_pen_.setColor(QColor(0, 255, 255));
@@ -61,6 +63,11 @@ std::list<std::vector<int>>& MarkGraphicsScene::get_parallel_groups()
 	return parallel_lines_group_;
 }
 
+QPixmap & MarkGraphicsScene::get_image()
+{
+	return image_;
+}
+
 const std::string & MarkGraphicsScene::get_image_path() const
 {
 	return image_path_;
@@ -81,9 +88,9 @@ int MarkGraphicsScene::num_vertices() const
 	return vertex_list_.size();
 }
 
-void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2f>& refined_vertices)
+void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2d>& refined_vertices)
 {
-	std::vector<Eigen::Vector2f>::const_iterator r_it = refined_vertices.begin();
+	std::vector<Eigen::Vector2d>::const_iterator r_it = refined_vertices.begin();
 	std::list<QPointF>::iterator vert_it = vertex_list_.begin();
 	std::list<QGraphicsEllipseItem *>::iterator vi_it = vertex_item_stack_.begin();
 	std::list<QGraphicsTextItem *>::iterator ni_it = number_item_stack_.begin();
@@ -102,7 +109,7 @@ void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2f>& refined
 		&& vi_it != vertex_item_stack_.end() && ni_it != number_item_stack_.end();
 		++r_it, ++vert_it, ++vi_it, ++ni_it)
 	{
-		(*vi_it)->setRect(half_w + r_it->x() - 2, half_h - r_it->y() - 2, 4, 4);
+		(*vi_it)->setRect(half_w + r_it->x() - 3, half_h - r_it->y() - 3, 6, 6);
 		(*vi_it)->setZValue(1.0);
 		(*ni_it)->setPos(half_w + r_it->x(), half_h - r_it->y());
 
@@ -122,6 +129,39 @@ void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2f>& refined
 		(*li_it)->setPen(line_pen_);
 	}
 	update();
+}
+
+void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id, const std::vector<QPointF>& precise_vertices)
+{
+	QPen precise_pen;
+	precise_pen.setColor(QColor(255, 255, 0));
+	precise_pen.setWidth(1);
+	QBrush precise_brush(QColor(255, 255, 0), Qt::SolidPattern);
+
+	precise_verts_id_.resize(precise_id.size());
+	for (int i = 0; i < precise_id.size(); i++)
+	{
+		int vert_id = precise_id[i];
+		precise_verts_id_[i] = vert_id;
+		const QPointF &precise_vert = precise_vertices[i];
+
+		std::list<QPointF>::iterator vert_it = vertex_list_.begin();
+		std::list<QGraphicsEllipseItem *>::iterator vert_item_it = vertex_item_stack_.begin();
+		std::advance(vert_it, vert_id);
+		std::advance(vert_item_it, vert_id);
+
+		vert_it->setX(precise_vert.x());
+		vert_it->setY(precise_vert.y());
+		(*vert_item_it)->setRect(precise_vert.x() - 4, precise_vert.y() - 4, 8, 8);
+		(*vert_item_it)->setPen(precise_pen);
+		(*vert_item_it)->setBrush(precise_brush);
+	}
+	update();
+}
+
+std::vector<int>& MarkGraphicsScene::get_precises_vertices()
+{
+	return precise_verts_id_;
 }
 
 void MarkGraphicsScene::save_current_state()
@@ -228,7 +268,7 @@ void MarkGraphicsScene::load_current_state()
 		int idx = 0;
 		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it, ++idx)
 		{
-			vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 2, vert_it->y() - 2, 4, 4, vertex_pen_);
+			vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 3, vert_it->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
 			vertex_item_->setZValue(1.0);
 			vertex_item_stack_.push_back(vertex_item_);
 			number_item_ = graphics_scene_->addText(QString::number(idx), font);
@@ -248,6 +288,7 @@ void MarkGraphicsScene::load_current_state()
 
 			QLineF line(v1, v2);
 			line_item_ = graphics_scene_->addLine(line, line_pen_);
+			line_item_->setZValue(0.7);
 			line_item_stack_.push_back(line_item_);
 			mode_stack_.push_back(1);
 		}
@@ -339,6 +380,7 @@ void MarkGraphicsScene::set_faces(const std::vector<std::vector<int>>& face_circ
 		QPen face_pen = Qt::NoPen;
 		
 		QGraphicsPolygonItem * face_item = graphics_scene_->addPolygon(face, face_pen, face_brush);
+		face_item->setZValue(0.5);
 		face_item_stack_.push_back(face_item);
 	}
 
@@ -363,14 +405,14 @@ void MarkGraphicsScene::change_state()
 			QPointF &v1 = vertices_vec[it->p1()];
 			QPointF &v2 = vertices_vec[it->p2()];
 
-			Eigen::Vector2f u;
+			Eigen::Vector2d u;
 			u[0] = v2.x() - v1.x();
 			u[1] = v2.y() - v1.y();
 			u.normalize();
 
 			N_.block<2, 1>(0, idx) = u;
-			A_.block<2, 1>(0, idx) = Eigen::Vector2f(v1.x(), v1.y());
-			B_.block<2, 1>(0, idx) = Eigen::Vector2f(v2.x(), v2.y());
+			A_.block<2, 1>(0, idx) = Eigen::Vector2d(v1.x(), v1.y());
+			B_.block<2, 1>(0, idx) = Eigen::Vector2d(v2.x(), v2.y());
 		}
 		parallel_pen_ = random_pen();
 
@@ -456,13 +498,14 @@ void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 			perm_ = false;
 			line_.reset(new QLineF(event->pos(), event->pos()));
 			line_item_ = graphics_scene_->addLine(*line_, line_pen_);
+			line_item_->setZValue(0.7);
 		}
 		else if (event->button() == Qt::LeftButton)
 		{
 			mode_stack_.push_back(0);
 			vertex_->setX(event->pos().x());
 			vertex_->setY(event->pos().y());
-			vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 2, vertex_->y() - 2, 4, 4, vertex_pen_);
+			vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 3, vertex_->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
 			vertex_item_->setZValue(1.0);
 
 			QFont font;
@@ -633,11 +676,11 @@ bool MarkGraphicsScene::find_nearest_edge(const QPoint & point, int & nearest_ed
 	if (line_list_.empty())
 		return false;
 
-	Eigen::Vector2f p((float)point.x(), (float)point.y());
-	//Eigen::MatrixXf AP = A_.colwise() - p;
+	Eigen::Vector2d p((float)point.x(), (float)point.y());
+	//Eigen::MatrixXd AP = A_.colwise() - p;
 
-	//Eigen::MatrixXf d_vec = N_.array().rowwise() * ((AP.transpose() * N_).diagonal().transpose().array());
-	//Eigen::VectorXf result = (AP - d_vec).colwise().norm();
+	//Eigen::MatrixXd d_vec = N_.array().rowwise() * ((AP.transpose() * N_).diagonal().transpose().array());
+	//Eigen::VectorXd result = (AP - d_vec).colwise().norm();
 
 	//distance = result.minCoeff(&nearest_edge_id);
 
@@ -648,8 +691,8 @@ bool MarkGraphicsScene::find_nearest_edge(const QPoint & point, int & nearest_ed
 	{
 		float min_dist = std::numeric_limits<float>::max();
 
-		Eigen::Vector2f v1 = A_.col(i);
-		Eigen::Vector2f v2 = B_.col(i);
+		Eigen::Vector2d v1 = A_.col(i);
+		Eigen::Vector2d v2 = B_.col(i);
 
 		float l2 = (v2 - v1).transpose() * (v2 - v1);
 		if (std::abs(l2) < 1e-4)
@@ -658,8 +701,8 @@ bool MarkGraphicsScene::find_nearest_edge(const QPoint & point, int & nearest_ed
 		}
 		else
 		{
-			float t = std::max(0.0f, std::min(1.0f, (p - v1).dot(v2 - v1) / l2));
-			Eigen::Vector2f projection = v1 + t * (v2 - v1);
+			float t = std::max(0.0, std::min(1.0, (p - v1).dot(v2 - v1) / l2));
+			Eigen::Vector2d projection = v1 + t * (v2 - v1);
 			min_dist = (p - projection).norm();
 		}
 

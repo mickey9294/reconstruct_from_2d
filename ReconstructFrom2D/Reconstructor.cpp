@@ -18,14 +18,14 @@ Reconstructor::~Reconstructor()
 
 }
 
-void Reconstructor::reconstruct(const std::vector<Eigen::Vector2f>& verts_2d, const Eigen::VectorXf & q, 
-	const std::vector<std::vector<int>>& vert_to_face_map, const std::vector<PlanarFace> &faces)
+void Reconstructor::reconstruct(const std::vector<Eigen::Vector2d> & verts_2d, const Eigen::VectorXd &q,
+	const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces)
 {
 	int Nf = q.size() / 3;
 	int num_verts = verts_2d.size();
 
-	std::vector<Eigen::Vector3f> verts_3d(num_verts);
-	std::vector<Eigen::Vector3f> face_normals(Nf);
+	std::vector<Eigen::Vector3d> verts_3d(num_verts);
+	std::vector<Eigen::Vector3d> face_normals(Nf);
 
 	for (int i = 0; i < Nf; i++)
 	{
@@ -36,7 +36,7 @@ void Reconstructor::reconstruct(const std::vector<Eigen::Vector2f>& verts_2d, co
 	{
 		const std::vector<int> &related_faces_id = vert_to_face_map[i];
 
-		Eigen::Vector3f x_aug;
+		Eigen::Vector3d x_aug;
 		x_aug.segment(0, 2) = verts_2d[i];
 		x_aug[2] = -focal_length_;
 
@@ -72,7 +72,7 @@ void Reconstructor::reconstruct(const std::vector<Eigen::Vector2f>& verts_2d, co
 	output_shape(verts_3d, triangles);
 }
 
-void Reconstructor::output_shape(const std::vector<Eigen::Vector3f>& verts, const std::list<Eigen::Vector3i>& triangles)
+void Reconstructor::output_shape(const std::vector<Eigen::Vector3d>& verts, const std::list<Eigen::Vector3i>& triangles)
 {
 	std::ofstream out("..\\shape.off");
 	if (out.is_open())
@@ -80,7 +80,7 @@ void Reconstructor::output_shape(const std::vector<Eigen::Vector3f>& verts, cons
 		out << "OFF" << std::endl;
 		out << verts.size() << " " << triangles.size() << " 0" << std::endl;
 
-		for (std::vector<Eigen::Vector3f>::const_iterator v_it = verts.begin();
+		for (std::vector<Eigen::Vector3d>::const_iterator v_it = verts.begin();
 			v_it != verts.end(); ++v_it)
 			out << v_it->operator[](0) << " " << v_it->operator[](1) << " " << v_it->operator[](2) << std::endl;
 

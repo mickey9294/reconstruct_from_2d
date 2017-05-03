@@ -6,7 +6,7 @@ MPFGraph::MPFGraph()
 {
 }
 
-MPFGraph::MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vector<Eigen::Vector2f> &points)
+MPFGraph::MPFGraph(const std::vector<std::vector<int>> &circuits, const std::vector<Eigen::Vector2d> &points)
 {
 	int num_vertices = circuits.size();
 	vertices_.reserve(num_vertices);
@@ -83,7 +83,7 @@ MPFGraph::MPFGraph(const MPFGraph & another)
 
 	points_.resize(num_points);
 	int p_idx = 0;
-	for (std::vector<Eigen::Vector2f>::const_iterator p_it = another.const_points_begin();
+	for (std::vector<Eigen::Vector2d>::const_iterator p_it = another.const_points_begin();
 		p_it != another.const_points_end(); ++p_it, ++p_idx)
 	{
 		points_[p_idx][0] = p_it->x();
@@ -124,7 +124,7 @@ MPFGraph & MPFGraph::operator=(const MPFGraph & another)
 
 	points_.resize(num_points);
 	int p_idx = 0;
-	for (std::vector<Eigen::Vector2f>::const_iterator p_it = another.const_points_begin();
+	for (std::vector<Eigen::Vector2d>::const_iterator p_it = another.const_points_begin();
 		p_it != another.const_points_end(); ++p_it, ++p_idx)
 	{
 		points_[p_idx][0] = p_it->x();
@@ -154,12 +154,12 @@ std::vector<std::list<int>>::const_iterator MPFGraph::const_adj_list_end() const
 	return adjacency_list_.end();
 }
 
-std::vector<Eigen::Vector2f>::const_iterator MPFGraph::const_points_begin() const
+std::vector<Eigen::Vector2d>::const_iterator MPFGraph::const_points_begin() const
 {
 	return points_.begin();
 }
 
-std::vector<Eigen::Vector2f>::const_iterator MPFGraph::const_points_end() const
+std::vector<Eigen::Vector2d>::const_iterator MPFGraph::const_points_end() const
 {
 	return points_.end();
 }
@@ -197,8 +197,8 @@ bool MPFGraph::coexist(MPFVertex & v1, MPFVertex & v2)
 		return true;
 
 	Line e0 = common_edges.front();
-	Eigen::Vector2f p0 = points_[e0.p1()];
-	Eigen::Vector2f q0 = points_[e0.p2()];
+	Eigen::Vector2d p0 = points_[e0.p1()];
+	Eigen::Vector2d q0 = points_[e0.p2()];
 	bool vertical0 = std::abs(q0[0] - p0[0]) < 1e-3;
 	float slope0;
 	float intercept0;
@@ -216,8 +216,8 @@ bool MPFGraph::coexist(MPFVertex & v1, MPFVertex & v2)
 	std::advance(com_it, 1);
 	for (; com_it != common_edges.end(); ++com_it)
 	{
-		Eigen::Vector2f p = points_[com_it->p1()];
-		Eigen::Vector2f q = points_[com_it->p2()];
+		Eigen::Vector2d p = points_[com_it->p1()];
+		Eigen::Vector2d q = points_[com_it->p2()];
 		if (std::abs(q[0] - p[0]) < 1e-3)
 		{
 			if (vertical0)

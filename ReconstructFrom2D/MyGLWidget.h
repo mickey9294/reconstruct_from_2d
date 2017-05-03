@@ -63,7 +63,7 @@ private:
 	GLfloat m_yRot;
 	GLfloat m_zRot;
 	bool m_transparent;
-	Eigen::Vector3f translation_;
+	Eigen::Vector3d translation_;
 	float m;
 	std::shared_ptr<ShapeModel> m_model;
 

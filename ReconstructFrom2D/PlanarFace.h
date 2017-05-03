@@ -18,8 +18,8 @@ public:
 	void set_id(int id);
 	int id() const;
 
-	void set_normal(const Eigen::Vector3f &normal);
-	Eigen::Vector3f get_normal() const;
+	void set_normal(const Eigen::Vector3d &normal);
+	Eigen::Vector3d get_normal() const;
 
 	const std::vector<int> &const_circuit() const;
 	std::vector<int> & get_circuit();
@@ -32,7 +32,7 @@ public:
 private:
 	int id_;
 	std::vector<int> circuit_;
-	Eigen::Vector3f normal_;
+	Eigen::Vector3d normal_;
 	std::list<int> edges_list_;
 };
 

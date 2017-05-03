@@ -3,13 +3,9 @@ function output = solve_q_function( q )
 %   Detailed explanation goes here
 
 xi = load('xi.csv');
-global vert_face_map;
-global f;
-global edges;
 global G;
-global face_parallel_groups;
 
-[Au, Bu, Cu]= form_constraints(xi, edges, vert_face_map, face_parallel_groups, f);
+[Au, Bu, Cu]= form_constraints(xi);
 
 output = 0;
 if size(Au, 1) > 0
@@ -34,9 +30,9 @@ for i = 1:size(G,1)
     n1 = q(start1:(start1 + 2));
     n2 = q(start2:(start2 + 2));
     
-    gsum = gsum + dot(n1, n2)^2;
+    gsum = gsum + dot(n1/norm(n1), n2/norm(n2))^2;
 end
-output = output + gsum;
+output = output + 10 * gsum;
 
 end
 

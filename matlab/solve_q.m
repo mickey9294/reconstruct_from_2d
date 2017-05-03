@@ -7,8 +7,8 @@ function qiplus1 = solve_q(qi)
 % Cd = load('C.csv');
 % E = load('E.csv');
 
-%[Aeq, beq] = form_fix_constraints(Ad, Bd, Cd, E);
-qiplus1 = fmincon(@solve_q_function, qi, [], [], [], [],[],[], @nonlcon_q);
+[Aeq, beq] = form_fix_constraints();
+qiplus1 = fmincon(@solve_q_function, qi, [], [], Aeq, beq);
 
 dlmwrite('qi_1.csv', qiplus1);
 

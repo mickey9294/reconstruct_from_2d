@@ -24,18 +24,32 @@ global face_parallel_groups;
 face_parallel_groups = read_list('face_parallel_groups.txt', size(q0,1)/3);
 face_parallel_groups = cellfun(acc, face_parallel_groups, 'UniformOutput', false);
 
+global perspective_syms;
+perspective_syms = load('perspective_syms.txt');
+
+global face_circuits;
+face_circuits = read_list('circuits.txt', size(q0,1)/3);
+acc = @(x) x+1;
+face_circuits = cellfun(acc, face_circuits, 'UniformOutput', false);
+
+global precise_vertices;
+precise_vertices = load('precise_id.csv');
+precise_vertices = precise_vertices + 1;
+global precise_sym_faces;
+precise_sym_faces = load('precise_sym_faces.csv');
+
 global Ad;
-Ad = load('A.csv');
+Ad = load('Ad.csv');
 global Bd;
-Bd = load('B.csv');
+Bd = load('Bd.csv');
 global Cd;
-Cd = load('C.csv');
+Cd = load('Cd.csv');
 global E;
 E = load('E.csv');
 global G;
 G = load('G.csv');
 
-sigma = 0.004;
+sigma = 1.0e-10;
 
 % global xi;
 % global qi;
@@ -49,7 +63,9 @@ while true
    qiplus1 = solve_q(qi);
    xiplus1 = solve_x(xi);
    
-   delta = abs(F_q_x(qiplus1, xiplus1) - F_q_x(qi, xi));
+   Fiplus1 = F_q_x(qiplus1, xiplus1);
+   Fi = F_q_x(qi, xi);
+   delta = abs(Fiplus1 - Fi);
    if delta < sigma
        break;
    else

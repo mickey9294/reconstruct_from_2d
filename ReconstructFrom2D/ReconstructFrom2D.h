@@ -56,8 +56,8 @@ private:
 	std::shared_ptr<PlaneCalibApp> calib_app_;
 	std::shared_ptr<ArtecProcessor> artec_processor_;
 
-	Eigen::Vector2f primary_point_;
-	Eigen::Vector2f focal_length_;
+	Eigen::Vector2d primary_point_;
+	Eigen::Vector2d focal_length_;
 	std::shared_ptr<Reconstructor> reconstructor_;
 
 	std::shared_ptr<QTabWidget> tabWidget_;

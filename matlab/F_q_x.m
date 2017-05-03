@@ -2,13 +2,9 @@ function output = F_q_x( q, x )
 %F_Q_X Summary of this function goes here
 %   Detailed explanation goes here
 
-global vert_face_map;
-global f;
-global edges;
 global G;
-global face_parallel_groups;
 
-[Au, Bu, Cu]= form_constraints(x, edges, vert_face_map, face_parallel_groups, f);
+[Au, Bu, Cu]= form_constraints(x);
 
 output = 0;
 if size(Au, 1) > 0
@@ -33,7 +29,7 @@ for i = 1:size(G,1)
     n1 = q(start1:(start1 + 2));
     n2 = q(start2:(start2 + 2));
     
-    gsum = gsum + dot(n1, n2)^2;
+    gsum = gsum + dot(n1/norm(n1), n2/norm(n2))^2;
 end
 output = output + gsum;
 

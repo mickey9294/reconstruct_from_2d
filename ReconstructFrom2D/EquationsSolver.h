@@ -18,5 +18,5 @@ public:
 	~EquationsSolver();
 
 	void solve(int Nf, int Nv, 
-		std::vector<Eigen::Vector2f> &refined_vertices, Eigen::VectorXf &refinded_q);
+		std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refinded_q);
 };

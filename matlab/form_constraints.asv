@@ -46,12 +46,14 @@ K = [-f,0,0;0,-f,0;0,0,1];
 Bu = zeros((sum(perspective_syms > 0) - length(precise_sym_faces)) * 2, 3 * Nf);
 imprecise_sym_faces = setdiff(1:Nf, precise_sym_faces);
 count = 1;
-for i = 1:length(imprecise_sym_faces)
-    face_id = imprecise_sym_faces(i);
-    
-    sym_idx = perspective_syms(face_id);
+for i = 1:Nf
+    sym_idx = perspective_syms(i);
     if sym_idx > 0
-        circuit = face_circuits{face_id};
+        if ismember(i, precise_sym_faces)
+            continue;
+        end
+        
+        circuit = face_circuits{i};
 
         N = length(circuit);
         Si = zeros(3 * N, 9);
@@ -111,7 +113,7 @@ end
 num_face_parallel_lines = cellfun('length', face_parallel_groups);
 num_pairs = sum(num_face_parallel_lines / 2);
 global Cd;
-Cu = zeros(num_pairs - size(Cd, 1), 3 * Nf);
+Cu = zeros(num_pairs - 2 * size(Cd, 1), 3 * Nf);
 idx = 1;
 for i = 1:length(face_parallel_groups)
     for j = 1:2:num_face_parallel_lines(i)

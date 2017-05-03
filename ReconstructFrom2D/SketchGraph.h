@@ -21,9 +21,9 @@ public:
 
 	SketchGraph & operator=(const SketchGraph &another);
 
-	std::vector<Eigen::Vector2f>::const_iterator const_vertices_begin() const;
-	std::vector<Eigen::Vector2f>::const_iterator const_vertices_end() const;
-	const std::vector<Eigen::Vector2f> & const_vertices();
+	std::vector<Eigen::Vector2d>::const_iterator const_vertices_begin() const;
+	std::vector<Eigen::Vector2d>::const_iterator const_vertices_end() const;
+	const std::vector<Eigen::Vector2d> & const_vertices();
 
 	std::vector<Line>::const_iterator const_edges_begin() const;
 	std::vector<Line>::const_iterator const_edges_end() const;
@@ -45,11 +45,11 @@ public:
 	void rebuild_adjacency_list();
 
 private:
-	std::vector<Eigen::Vector2f> vertices_;
+	std::vector<Eigen::Vector2d> vertices_;
 	std::vector<Line> edges_;
 	std::vector<std::list<int>> adjacency_list_;
 	Eigen::MatrixXi adjacency_mat_;
 
-	int orientation(Eigen::Vector2f p, Eigen::Vector2f q, Eigen::Vector2f r);
+	int orientation(Eigen::Vector2d p, Eigen::Vector2d q, Eigen::Vector2d r);
 };
 

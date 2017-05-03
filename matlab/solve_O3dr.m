@@ -14,7 +14,8 @@ E = load('E.csv');
 G = load('G.csv');
 
 x0 = -1 + (1 + 1) * rand(3 * Nf, 1);
-x = lsqnonlin(@objective_function, x0);
+%x = lsqnonlin(@objective_function, x0);
+[x, fval] = fsolve(@objective_function, x0);
 
 dlmwrite('q0.csv', x);
 

@@ -12,7 +12,7 @@ EquationsSolver::~EquationsSolver()
 }
 
 void EquationsSolver::solve(int Nf, int Nv, 
-	std::vector<Eigen::Vector2f> &refined_vertices, Eigen::VectorXf &refined_q)
+	std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q)
 {
 	Engine *ep;
 	if (!(ep = engOpen("\0"))) //Æô¶¯matlab ÒýÇæ

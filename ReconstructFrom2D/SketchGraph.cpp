@@ -41,7 +41,7 @@ SketchGraph::SketchGraph(const SketchGraph & another)
 	int num_vertices = another.num_vertices();
 	vertices_.resize(num_vertices);
 	int vert_idx = 0;
-	for (std::vector<Eigen::Vector2f>::const_iterator vert_it = another.const_vertices_begin();
+	for (std::vector<Eigen::Vector2d>::const_iterator vert_it = another.const_vertices_begin();
 		vert_it != another.const_vertices_end(); ++vert_it, ++vert_idx)
 	{
 		vertices_[vert_idx][0] = vert_it->x();
@@ -83,7 +83,7 @@ SketchGraph & SketchGraph::operator=(const SketchGraph & another)
 	int num_vertices = another.num_vertices();
 	vertices_.resize(num_vertices);
 	int vert_idx = 0;
-	for (std::vector<Eigen::Vector2f>::const_iterator vert_it = another.const_vertices_begin();
+	for (std::vector<Eigen::Vector2d>::const_iterator vert_it = another.const_vertices_begin();
 		vert_it != another.const_vertices_end(); ++vert_it, ++vert_idx)
 	{
 		vertices_[vert_idx][0] = vert_it->x();
@@ -116,17 +116,17 @@ SketchGraph & SketchGraph::operator=(const SketchGraph & another)
 	return *this;
 }
 
-std::vector<Eigen::Vector2f>::const_iterator SketchGraph::const_vertices_begin() const
+std::vector<Eigen::Vector2d>::const_iterator SketchGraph::const_vertices_begin() const
 {
 	return vertices_.begin();
 }
 
-std::vector<Eigen::Vector2f>::const_iterator SketchGraph::const_vertices_end() const
+std::vector<Eigen::Vector2d>::const_iterator SketchGraph::const_vertices_end() const
 {
 	return vertices_.end();
 }
 
-const std::vector<Eigen::Vector2f>& SketchGraph::const_vertices()
+const std::vector<Eigen::Vector2d>& SketchGraph::const_vertices()
 {
 	return vertices_;
 }
@@ -213,14 +213,14 @@ int SketchGraph::num_edges() const
 
 bool SketchGraph::edges_intersect(int v11, int v12, int v21, int v22)
 {
-	Eigen::Vector2f &p1 = vertices_[v11];
-	Eigen::Vector2f &q1 = vertices_[v12];
-	Eigen::Vector2f &p2 = vertices_[v21];
-	Eigen::Vector2f &q2 = vertices_[v22];
+	Eigen::Vector2d &p1 = vertices_[v11];
+	Eigen::Vector2d &q1 = vertices_[v12];
+	Eigen::Vector2d &p2 = vertices_[v21];
+	Eigen::Vector2d &q2 = vertices_[v22];
 
 	/* Check wheter two lines are parallel */
-	//Eigen::Vector2f v1 = p1 - q1;
-	//Eigen::Vector2f v2 = p2 - q2;
+	//Eigen::Vector2d v1 = p1 - q1;
+	//Eigen::Vector2d v2 = p2 - q2;
 	//if (v1.cross(v2).norm() < 1e-3)
 	//	return false;
 
@@ -239,7 +239,7 @@ bool SketchGraph::edges_intersect(int v11, int v12, int v21, int v22)
 	return false;
 }
 
-int SketchGraph::orientation(Eigen::Vector2f p, Eigen::Vector2f q, Eigen::Vector2f r)
+int SketchGraph::orientation(Eigen::Vector2d p, Eigen::Vector2d q, Eigen::Vector2d r)
 {
 	float val = (q[1] - p[1]) * (r[0] - q[0]) -
 		(q[0] - p[0]) * (r[1] - q[1]);
