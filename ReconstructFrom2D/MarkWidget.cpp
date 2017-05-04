@@ -155,6 +155,16 @@ void MarkWidget::recon_from_file()
 	QString q_path = QFileDialog::getOpenFileName(this, "Shape Vector",
 		"..\\matlab", tr("CSV File (*.csv)"));
 
+	if (!constraints_generator_)
+	{
+		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
+			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(),
+			displayWidget_->get_parallel_groups(), displayWidget_->get_precises_vertices(), this));
+		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent(), SLOT(receive_status(QString)));
+	}
+	else
+		constraints_generator_->reset(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
+			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), displayWidget_->get_parallel_groups());
 	constraints_generator_->reconstruct_from_file(q_path);
 }
 

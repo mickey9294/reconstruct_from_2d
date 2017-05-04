@@ -98,7 +98,7 @@ for i = 1:length(imprecise_sym_faces)
         ci2 = cross(K \ psx, K' * psl);
         Ci = [ci1, ci2]';
         Bi = zeros(2, 3* Nf);
-        start = 3 * (i - 1) + 1;
+        start = 3 * (face_id - 1) + 1;
         Bi(:, start:(start + 2)) = Ci;
         
         gstart = (count - 1) * 2 + 1;

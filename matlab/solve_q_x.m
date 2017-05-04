@@ -49,10 +49,10 @@ E = load('E.csv');
 global G;
 G = load('G.csv');
 
-sigma = 1.0e-10;
+sigma = 1.0e-6;
 
-% global xi;
-% global qi;
+global xi;
+global qi;
 % global xiplus1;
 % global qiplus1;
 
@@ -60,8 +60,8 @@ xi = x0;
 qi = q0;
 i = 0;
 while true
-   qiplus1 = solve_q(qi);
-   xiplus1 = solve_x(xi);
+   qiplus1 = solve_q();
+   xiplus1 = solve_x();
    
    Fiplus1 = F_q_x(qiplus1, xiplus1);
    Fi = F_q_x(qi, xi);
@@ -71,11 +71,14 @@ while true
    else
        qi = qiplus1;
        xi = xiplus1;
-       dlmwrite('xi.csv', xi);
-       dlmwrite('qi.csv', qi);
+%        dlmwrite('xi.csv', xi);
+%        dlmwrite('qi.csv', qi);
    end
    i = i + 1;
 end
+
+dlmwrite('xi.csv', xi);
+dlmwrite('qi.csv', qi);
 
 end
 
