@@ -32,7 +32,6 @@ face_circuits = read_list('circuits.txt', size(q0,1)/3);
 acc = @(x) x+1;
 face_circuits = cellfun(acc, face_circuits, 'UniformOutput', false);
 
-global precise_vertices;
 precise_vertices = load('precise_id.csv');
 precise_vertices = precise_vertices + 1;
 global precise_sym_faces;
@@ -56,29 +55,35 @@ global qi;
 % global xiplus1;
 % global qiplus1;
 
-xi = x0;
+global imprecise_vertices;
+imprecise_vertices = setdiff(1:size(x0,1), precise_vertices);
+
+xi = x0(imprecise_vertices,:);
 qi = q0;
 i = 0;
+Fi = 0;
 while true
    qiplus1 = solve_q();
    xiplus1 = solve_x();
    
-   Fiplus1 = F_q_x(qiplus1, xiplus1);
-   Fi = F_q_x(qi, xi);
+   full_x = x0;
+   full_x(imprecise_vertices, :) = xiplus1;
+   Fiplus1 = F_q_x(qiplus1, full_x);
    delta = abs(Fiplus1 - Fi);
    if delta < sigma
        break;
    else
        qi = qiplus1;
        xi = xiplus1;
+       Fi = Fiplus1;
 %        dlmwrite('xi.csv', xi);
 %        dlmwrite('qi.csv', qi);
    end
    i = i + 1;
 end
 
-dlmwrite('xi.csv', xi);
-dlmwrite('qi.csv', qi);
+dlmwrite('xi_1.csv', full_x);
+dlmwrite('qi_1.csv', qiplus1);
 
 end
 

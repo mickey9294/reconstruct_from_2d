@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
+#include <chrono>
 
 #include <Eigen\Core>
 #include <Eigen\Eigenvalues>

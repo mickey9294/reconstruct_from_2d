@@ -2,10 +2,10 @@ function output = solve_q_function( q )
 %SOLVE_Q_FUNCTION Summary of this function goes here
 %   Detailed explanation goes here
 
-xi = load('xi.csv');
+global xi;
 global G;
 
-[Au, Bu, Cu]= form_constraints(xi);
+[Au, Bu, Cu]= form_unfix_constraints(xi);
 
 output = 0;
 if size(Au, 1) > 0

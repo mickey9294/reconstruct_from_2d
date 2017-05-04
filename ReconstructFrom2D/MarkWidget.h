@@ -34,11 +34,13 @@ public:
 	void update_scene();
 	void recon_from_file();
 	void recognize_precise_vertices();
+	void receive_status(QString text);
 
 signals:
 	void set_image(QString image_path);
 	void change_label_state();
 	void stop_labeling();
+	void report_status(QString text);
 	
 protected:
 	void keyPressEvent(QKeyEvent *event);
@@ -56,6 +58,7 @@ private:
 	std::shared_ptr<ConstraintsGenerator> constraints_generator_;
 
 	std::shared_ptr<QLabel> image_list_label;
+	std::shared_ptr<QLabel> state_label_;
 	std::shared_ptr<QVBoxLayout> control_layout;
 	std::shared_ptr<QHBoxLayout> load_layout;
 	std::shared_ptr<QVBoxLayout> display_layout;

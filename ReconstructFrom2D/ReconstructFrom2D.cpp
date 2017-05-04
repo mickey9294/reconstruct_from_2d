@@ -5,7 +5,7 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 {
 	initUI();
 
-	move(100, 100);
+	move(100, 50);
 
 	connect(actionExit.get(), SIGNAL(triggered()), this, SLOT(close()));
 	connect(actionOpen.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_images()));
@@ -13,6 +13,7 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 	connect(actionLoadState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_scene_state()));
 	connect(this, SIGNAL(set_images_path_list(QStringList)), markWidget_.get(), SLOT(set_images_path(QStringList)));
 	connect(actionUpdateScene.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(update_scene()));
+	connect(markWidget_.get(), SIGNAL(report_status(QString)), this, SLOT(receive_status(QString)));
 
 	primary_point_.setZero();
 	focal_length_.setZero();
@@ -42,6 +43,7 @@ void ReconstructFrom2D::initUI()
 	menuScene->addAction(actionLoadState.get());
 	menuScene->addAction(actionUpdateScene.get());
 
+	statusBar()->showMessage(tr("Ready"));
 	// 设置显示当前布局
 	setCentralWidget(tabWidget_.get());
 	//this->setLayout(control_layout);

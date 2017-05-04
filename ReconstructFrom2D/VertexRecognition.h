@@ -23,7 +23,7 @@ public:
 	void set_sketch_vertices(const std::list<QPointF> &sketch_vertices);
 
 	void get_precise_vertices(std::vector<int> &precise_vertices_id,
-		std::vector<QPointF> &precies_vertices);
+		std::vector<QPointF> &precies_vertices, std::vector<std::vector<QLineF>> &line_segments);
 
 private:
 	QImage image_;

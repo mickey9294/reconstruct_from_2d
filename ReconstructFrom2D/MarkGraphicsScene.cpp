@@ -159,6 +159,24 @@ void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id,
 	update();
 }
 
+void MarkGraphicsScene::set_line_segments(const std::vector<std::vector<QLineF>>& line_segments)
+{
+	QPen ls_pen(QColor(255, 255, 0));
+	ls_pen.setWidth(2.0);
+
+	for (std::vector<std::vector<QLineF>>::const_iterator patch_it = line_segments.begin();
+		patch_it != line_segments.end(); patch_it++)
+	{
+		for (std::vector<QLineF>::const_iterator ls_it = patch_it->begin();
+			ls_it != patch_it->end(); ++ls_it)
+		{
+			QGraphicsLineItem * ls_item = graphics_scene_->addLine(*ls_it, ls_pen);
+			ls_item_stack_.push_back(ls_item);
+		}
+	}
+	update();
+}
+
 std::vector<int>& MarkGraphicsScene::get_precises_vertices()
 {
 	return precise_verts_id_;
@@ -272,6 +290,7 @@ void MarkGraphicsScene::load_current_state()
 			vertex_item_->setZValue(1.0);
 			vertex_item_stack_.push_back(vertex_item_);
 			number_item_ = graphics_scene_->addText(QString::number(idx), font);
+			number_item_->setZValue(1.0);
 			number_item_->setPos(*vert_it);
 			number_item_stack_.push_back(number_item_);
 			mode_stack_.push_back(0);
@@ -316,6 +335,8 @@ void MarkGraphicsScene::load_current_state()
 
 void MarkGraphicsScene::set_image(QString image_path)
 {
+	emit set_state_text("Marking vertices and edges");
+
 	QImage test_img(image_path);
 	image_ = QPixmap::fromImage(test_img);
 
@@ -417,6 +438,8 @@ void MarkGraphicsScene::change_state()
 		parallel_pen_ = random_pen();
 
 		line_chosen_before_.resize(line_list_.size(), false);
+
+		emit set_state_text("Marking parallel lines");
 	}
 	else if (state_ == LabelParallel)
 	{
@@ -425,6 +448,8 @@ void MarkGraphicsScene::change_state()
 		N_.resize(0, 0);
 		A_.resize(0, 0);
 		B_.resize(0, 0);
+
+		emit set_state_text("Marking vertices and edges");
 	}
 }
 
@@ -483,6 +508,8 @@ void MarkGraphicsScene::reset()
 	parallel_lines_group_.clear();
 	std::fill(line_chosen_before_.begin(), line_chosen_before_.end(), false);
 	current_parallel_group_.clear();
+
+	clear_line_segments();
 	
 	if (state_ == LabelParallel)
 		change_state();
@@ -512,6 +539,7 @@ void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 			font.setPointSize(12);
 			font.setBold(true);
 			number_item_ = graphics_scene_->addText(QString::number(vertex_list_.size()), font);
+			number_item_->setZValue(1.0);
 			number_item_->setPos(event->pos());
 		}
 	}
@@ -736,6 +764,15 @@ QPen MarkGraphicsScene::random_pen()
 	pen.setColor(random_color());
 	
 	return pen;
+}
+
+void MarkGraphicsScene::clear_line_segments()
+{
+	for (std::list<QGraphicsLineItem *>::iterator ls_it = ls_item_stack_.begin();
+		ls_it != ls_item_stack_.end(); ++ls_it)
+	{
+		graphics_scene_->removeItem(*ls_it);
+	}
 }
 
 void MarkGraphicsScene::repaint_faces()

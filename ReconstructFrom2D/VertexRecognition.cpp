@@ -29,28 +29,39 @@ void VertexRecognition::set_sketch_vertices(const std::list<QPointF>& sketch_ver
 }
 
 void VertexRecognition::get_precise_vertices(std::vector<int>& precise_vertices_id,
-	std::vector<QPointF> &precise_vertices)
+	std::vector<QPointF> &precise_vertices, std::vector<std::vector<QLineF>> &line_segments)
 {
 	const int patch_size = 50;
+	line_segments.clear();
+	line_segments.reserve(sketch_vertices_.size());
+
 	for (int i = 0; i < sketch_vertices_.size(); i++)
 	{
 		QPointF &sketch_vertex = sketch_vertices_[i];
-		int x_start, y_start;
-		if (sketch_vertex.x() > 20)
+		int x_start, y_start, x_end, y_end;
+		if (sketch_vertex.x() > patch_size / 2)
 			x_start = (int)sketch_vertex.x() - patch_size / 2;
 		else
 			x_start = 0;
-		if (sketch_vertex.y() > 20)
+		if (sketch_vertex.y() > patch_size / 2)
 			y_start = sketch_vertex.y() - patch_size / 2;
 		else
 			y_start = 0;
+		if (sketch_vertex.x() < image_.width() - patch_size / 2)
+			x_end = (int)sketch_vertex.x() + patch_size / 2;
+		else
+			x_end = image_.width();
+		if (sketch_vertex.y() < image_.height() - patch_size / 2)
+			y_end = (int)sketch_vertex.y() + patch_size / 2;
+		else
+			y_end = image_.height();
 
 		
 		/* Grab a patch around the sketch vertex */
-		image_double patch = new_image_double(patch_size, patch_size);
-		for (int x = 0; x < patch_size; x++)
+		image_double patch = new_image_double(x_end - x_start, y_end - y_start);
+		for (int x = 0; x + x_start < x_end; x++)
 		{
-			for (int y = 0; y < patch_size; y++)
+			for (int y = 0; y_start + y < y_end; y++)
 			{
 				QRgb pixel = image_.pixel(x_start + x, y_start + y);
 				int gray = qRed(pixel);
@@ -75,6 +86,8 @@ void VertexRecognition::get_precise_vertices(std::vector<int>& precise_vertices_
 			//out << lines[j].x1() << "," << lines[j].y1() << "," << lines[j].x2() << "," << lines[j].y2() << std::endl;
 		}
 		//out.close();
+
+		line_segments.push_back(lines);
 
 		QPointF precise_vertex(0, 0);
 		double min_dist = std::numeric_limits<double>::max();

@@ -3,7 +3,7 @@ function output = solve_x_function( x )
 %   Detailed explanation goes here
 
 qiplus1 = load('qi_1.csv');
-[Au, Bu, Cu] = form_constraints(x);
+[Au, Bu, Cu] = form_unfix_constraints(x);
 
 output = 0;
 if size(Au, 1) > 0

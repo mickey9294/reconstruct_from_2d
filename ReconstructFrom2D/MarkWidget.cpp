@@ -10,6 +10,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	recognitionButton_.reset(new QPushButton("Recognize Precise Vertices"));
 	detectPlanesButton_.reset(new QPushButton("Detect Planes"));
 	addConstraintsButton_.reset(new QPushButton("Add Constraints"));
+	state_label_.reset(new QLabel("Marking State"));
 	displayWidget_.reset(new MarkGraphicsScene());
 	imagesListWidget_.reset(new QListWidget());
 	imagesListWidget_->setFixedWidth(250);
@@ -39,6 +40,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	undo_layout->addStretch(0.5);
 	undo_layout->addWidget(resetButton_.get());
 	undo_layout->addWidget(undoButton_.get());
+	display_layout->addWidget(state_label_.get());
 	display_layout->addWidget(displayWidget_.get());
 	display_layout->addLayout(undo_layout.get());
 
@@ -60,6 +62,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(this, SIGNAL(change_label_state()), displayWidget_.get(), SLOT(change_state()));
 	connect(this, SIGNAL(stop_labeling()), displayWidget_.get(), SLOT(finish_label_parallelism()));
 	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
+	connect(displayWidget_.get(), SIGNAL(set_state_text(QString)), state_label_.get(), SLOT(setText(QString)));
 }
 
 MarkWidget::~MarkWidget()
@@ -160,7 +163,7 @@ void MarkWidget::recon_from_file()
 		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
 			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(),
 			displayWidget_->get_parallel_groups(), displayWidget_->get_precises_vertices(), this));
-		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent(), SLOT(receive_status(QString)));
+		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), this, SLOT(receive_status(QString)));
 	}
 	else
 		constraints_generator_->reset(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
@@ -176,9 +179,16 @@ void MarkWidget::recognize_precise_vertices()
 
 	std::vector<int> precise_vertices_id;
 	std::vector<QPointF> precise_vertices;
-	recognition.get_precise_vertices(precise_vertices_id, precise_vertices);
+	std::vector<std::vector<QLineF>> line_segments;
+	recognition.get_precise_vertices(precise_vertices_id, precise_vertices, line_segments);
 
+	displayWidget_->set_line_segments(line_segments);
 	displayWidget_->set_precise_vertices(precise_vertices_id, precise_vertices);
+}
+
+void MarkWidget::receive_status(QString text)
+{
+	emit report_status(text);
 }
 
 void MarkWidget::set_mark_image(QListWidgetItem * item)
@@ -191,6 +201,8 @@ void MarkWidget::set_mark_image(QListWidgetItem * item)
 
 void MarkWidget::detect_planes()
 {
+	displayWidget_->clear_line_segments();
+
 	//if (displayWidget_->num_faces() == 0)
 	//{
 	std::shared_ptr<FacesIdentifier> faces_detector(new FacesIdentifier(displayWidget_->get_vertices(), displayWidget_->get_edges()));
@@ -206,12 +218,14 @@ void MarkWidget::detect_planes()
 
 void MarkWidget::generate_constraints()
 {
+	displayWidget_->clear_line_segments();
+
 	if (!constraints_generator_)
 	{
 		constraints_generator_.reset(new ConstraintsGenerator(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),
 			displayWidget_->get_vertices(), displayWidget_->get_edges(), displayWidget_->const_face_circuits(), 
 			displayWidget_->get_parallel_groups(), displayWidget_->get_precises_vertices(), this));
-		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), parent(), SLOT(receive_status(QString)));
+		connect(constraints_generator_.get(), SIGNAL(report_status(QString)), this, SLOT(receive_status(QString)));
 	}
 	else
 		constraints_generator_->reset(displayWidget_->get_image_path(), displayWidget_->width(), displayWidget_->height(),

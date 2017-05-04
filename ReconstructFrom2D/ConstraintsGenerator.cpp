@@ -73,6 +73,9 @@ ConstraintsGenerator::~ConstraintsGenerator()
 
 void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q)
 {
+	std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now().time_since_epoch());
+
 	output_environment();
 
 	add_connectivity_constraint();
@@ -85,19 +88,23 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined
 
 	emit report_status("Adding constraints done.");
 
-	//if (!equations_solver_)
-	//	equations_solver_.reset(new EquationsSolver());
+	if (!equations_solver_)
+		equations_solver_.reset(new EquationsSolver());
 
-	//equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
 
-	//update_environment(refined_vertices);
+	update_environment(refined_vertices);
 
-	//emit report_status("Constraint refinement and joint optimization done.");
+	emit report_status("Constraint refinement and joint optimization done.");
 
-	//Reconstructor recon(focal_length_);
-	//recon.reconstruct(vertices_, refined_q, vert_to_face_map_, faces_);
+	Reconstructor recon(focal_length_);
+	recon.reconstruct(vertices_, refined_q, vert_to_face_map_, faces_);
 
-	//emit report_status("Reconstruction done.");
+	std::chrono::milliseconds end_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now().time_since_epoch());
+	
+	float duration = (float)(end_time.count() - start_time.count()) / 1000.0;
+	emit report_status("Reconstruction done. Time cost: " + QString::number(duration));
 }
 
 void ConstraintsGenerator::add_connectivity_constraint()
@@ -211,7 +218,7 @@ void ConstraintsGenerator::add_perspective_symmetry_constraint()
 		for (std::list<Eigen::VectorXd>::iterator row_it = rows.begin(); row_it != rows.end(); ++row_it, ++row_idx)
 			B_.row(row_idx) = *row_it;
 
-		std::cout << B_ << std::endl;
+		//std::cout << B_ << std::endl;
 
 		in.close();
 	}

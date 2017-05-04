@@ -52,6 +52,8 @@ public:
 	void update_scene(const std::vector<Eigen::Vector2d> &refined_vertices);
 
 	void set_precise_vertices(const std::vector<int> &precise_id, const std::vector<QPointF> &precise_vertices);
+	void set_line_segments(const std::vector<std::vector<QLineF>> &line_segments);
+	void clear_line_segments();
 	std::vector<int> &get_precises_vertices();
 
 	public slots:
@@ -67,6 +69,7 @@ public:
 
 signals:
 	void resize_main_window(int dw, int dh);
+	void set_state_text(QString text);
 
 protected:
 	void mousePressEvent(QMouseEvent *event);
@@ -117,6 +120,8 @@ private:
 	std::list<QGraphicsPolygonItem *> face_item_stack_;
 	std::list<QGraphicsTextItem *> number_item_stack_;
 	std::list<int> mode_stack_;
+
+	std::list<QGraphicsLineItem *> ls_item_stack_;
 
 	std::vector<std::vector<int>> face_circuits_;
 	std::vector<int> precise_verts_id_;
