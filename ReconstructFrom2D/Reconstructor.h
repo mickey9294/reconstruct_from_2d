@@ -23,10 +23,11 @@ public:
 	~Reconstructor();
 
 	void reconstruct(const std::vector<Eigen::Vector2d> & verts_2d, const Eigen::VectorXd &q,
-		const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces);
+		const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces,
+		std::vector<Eigen::Vector3d> &verts_3d, std::vector<Eigen::Vector3i> &triangles);
 
 private:
 	float focal_length_;
 
-	void output_shape(const std::vector<Eigen::Vector3d> &verts, const std::list<Eigen::Vector3i> &triangles);
+	void output_shape(const std::vector<Eigen::Vector3d> &verts, const std::vector<Eigen::Vector3i> &triangles);
 };

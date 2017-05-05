@@ -19,12 +19,14 @@ Reconstructor::~Reconstructor()
 }
 
 void Reconstructor::reconstruct(const std::vector<Eigen::Vector2d> & verts_2d, const Eigen::VectorXd &q,
-	const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces)
+	const std::vector<std::vector<int>> &vert_to_face_map, const std::vector<PlanarFace> &faces,
+	std::vector<Eigen::Vector3d> &verts_3d, std::vector<Eigen::Vector3i> &triangles)
 {
 	int Nf = q.size() / 3;
 	int num_verts = verts_2d.size();
 
-	std::vector<Eigen::Vector3d> verts_3d(num_verts);
+	//std::vector<Eigen::Vector3d> verts_3d(num_verts);
+	verts_3d.resize(num_verts);
 	std::vector<Eigen::Vector3d> face_normals(Nf);
 
 	for (int i = 0; i < Nf; i++)
@@ -56,7 +58,8 @@ void Reconstructor::reconstruct(const std::vector<Eigen::Vector2d> & verts_2d, c
 		verts_3d[i][2] = Z;
 	}
 
-	std::list<Eigen::Vector3i> triangles;
+	//std::list<Eigen::Vector3i> triangles;
+	triangles.clear();
 	for (int i = 0; i < faces.size(); i++)
 	{
 		const std::vector<int> &circuit = faces[i].const_circuit();
@@ -68,11 +71,12 @@ void Reconstructor::reconstruct(const std::vector<Eigen::Vector2d> & verts_2d, c
 			triangles.push_back(tri);
 		}
 	}
+	triangles.shrink_to_fit();
 
 	output_shape(verts_3d, triangles);
 }
 
-void Reconstructor::output_shape(const std::vector<Eigen::Vector3d>& verts, const std::list<Eigen::Vector3i>& triangles)
+void Reconstructor::output_shape(const std::vector<Eigen::Vector3d>& verts, const std::vector<Eigen::Vector3i>& triangles)
 {
 	std::ofstream out("..\\shape.off");
 	if (out.is_open())
@@ -84,7 +88,7 @@ void Reconstructor::output_shape(const std::vector<Eigen::Vector3d>& verts, cons
 			v_it != verts.end(); ++v_it)
 			out << v_it->operator[](0) << " " << v_it->operator[](1) << " " << v_it->operator[](2) << std::endl;
 
-		for (std::list<Eigen::Vector3i>::const_iterator f_it = triangles.begin();
+		for (std::vector<Eigen::Vector3i>::const_iterator f_it = triangles.begin();
 			f_it != triangles.end(); ++f_it)
 			out << "3 " << f_it->operator[](0) << " " << f_it->operator[](1)
 				<< " " << f_it->operator[](2) << std::endl;

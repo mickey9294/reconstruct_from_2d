@@ -133,10 +133,11 @@ void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2d>& refined
 
 void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id, const std::vector<QPointF>& precise_vertices)
 {
+	/* update vertices */
 	QPen precise_pen;
-	precise_pen.setColor(QColor(255, 255, 0));
+	precise_pen.setColor(QColor(255, 153, 0));
 	precise_pen.setWidth(1);
-	QBrush precise_brush(QColor(255, 255, 0), Qt::SolidPattern);
+	QBrush precise_brush(QColor(255, 153, 0), Qt::SolidPattern);
 
 	precise_verts_id_.resize(precise_id.size());
 	for (int i = 0; i < precise_id.size(); i++)
@@ -156,6 +157,20 @@ void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id,
 		(*vert_item_it)->setPen(precise_pen);
 		(*vert_item_it)->setBrush(precise_brush);
 	}
+
+	/* update edges */
+	std::list<Line>::iterator l_it = line_list_.begin();
+	std::list<QGraphicsLineItem *>::iterator li_it = line_item_stack_.begin();
+	for (; l_it != line_list_.end() && li_it != line_item_stack_.end(); ++l_it, ++li_it)
+	{
+		std::list<QPointF>::iterator vert_it = std::next(vertex_list_.begin(), l_it->p1());
+		QPointF &v1 = *vert_it;
+		vert_it = std::next(vertex_list_.begin(), l_it->p2());
+		QPointF &v2 = *vert_it;
+		QLineF new_line(v1, v2);
+		(*li_it)->setLine(new_line);
+	}
+
 	update();
 }
 
@@ -189,7 +204,8 @@ void MarkGraphicsScene::save_current_state()
 	{
 		/* Save the number */
 		out << vertex_list_.size() << " " << line_list_.size() << " "
-			<< face_circuits_.size() << " " << parallel_lines_group_.size() << std::endl;
+			<< face_circuits_.size() << " " << parallel_lines_group_.size() << " "
+			<< precise_verts_id_.size() << std::endl;
 
 		/* Save vertices */
 		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it)
@@ -224,6 +240,19 @@ void MarkGraphicsScene::save_current_state()
 			}
 		}
 
+		/* Save the precise vertices id */
+		std::vector<int>::iterator p_it = precise_verts_id_.begin();
+		if (p_it != precise_verts_id_.end())
+		{
+			out << *p_it;
+			std::advance(p_it, 1);
+			for (;p_it != precise_verts_id_.end(); ++p_it)
+			{
+				out << " " << *p_it;
+			}
+			out << std::endl;
+		}
+
 		out.close();
 	}
 }
@@ -242,6 +271,7 @@ void MarkGraphicsScene::load_current_state()
 		int num_edges = std::stoi(line_split[1]);
 		int num_faces = std::stoi(line_split[2]);
 		int num_parallel_groups = std::stoi(line_split[3]);
+		int num_precise_vertices = std::stoi(line_split[4]);
 		
 		for (int i = 0; i < num_vertices; i++)
 		{
@@ -279,14 +309,33 @@ void MarkGraphicsScene::load_current_state()
 			parallel_lines_group_.push_back(group);
 		}
 
+		std::unordered_set<int> precise_set;
+		std::getline(in, line);
+		boost::split(line_split, line, boost::is_any_of(" "), boost::token_compress_on);
+		assert(line_split.size() == num_precise_vertices);
+		precise_verts_id_.resize(num_precise_vertices);
+		for (int i = 0; i < line_split.size(); i++)
+		{
+			int precise_id = std::stoi(line_split[i]);
+			precise_verts_id_[i] = precise_id;
+			precise_set.insert(precise_id);
+		}
+
 		/* Restore state of graphics scene */
 		QFont font;
 		font.setPointSize(12);
 		font.setBold(true);
+		QPen precise_pen;
+		precise_pen.setColor(QColor(255, 153, 0));
+		precise_pen.setWidth(1);
+		QBrush precise_brush(QColor(255, 153, 0), Qt::SolidPattern);
 		int idx = 0;
 		for (std::list<QPointF>::iterator vert_it = vertex_list_.begin(); vert_it != vertex_list_.end(); ++vert_it, ++idx)
 		{
-			vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 3, vert_it->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
+			if(precise_set.find(idx) == precise_set.end())
+				vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 3, vert_it->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
+			else
+				vertex_item_ = graphics_scene_->addEllipse(vert_it->x() - 3, vert_it->y() - 3, 6, 6, precise_pen, precise_brush);
 			vertex_item_->setZValue(1.0);
 			vertex_item_stack_.push_back(vertex_item_);
 			number_item_ = graphics_scene_->addText(QString::number(idx), font);

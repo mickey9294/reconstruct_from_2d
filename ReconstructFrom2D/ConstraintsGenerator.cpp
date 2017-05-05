@@ -71,7 +71,8 @@ ConstraintsGenerator::~ConstraintsGenerator()
 {
 }
 
-void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q)
+void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q,
+	MeshModel &mesh)
 {
 	std::chrono::milliseconds start_time = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch());
@@ -88,6 +89,9 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined
 
 	emit report_status("Adding constraints done.");
 
+	std::vector<Eigen::Vector3d> verts_3d;
+	std::vector<Eigen::Vector3i> triangles;
+
 	if (!equations_solver_)
 		equations_solver_.reset(new EquationsSolver());
 
@@ -98,7 +102,9 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined
 	emit report_status("Constraint refinement and joint optimization done.");
 
 	Reconstructor recon(focal_length_);
-	recon.reconstruct(vertices_, refined_q, vert_to_face_map_, faces_);
+	recon.reconstruct(vertices_, refined_q, vert_to_face_map_, faces_, verts_3d, triangles);
+
+	mesh = MeshModel(verts_3d, triangles, faces_);
 
 	std::chrono::milliseconds end_time = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch());
@@ -451,7 +457,9 @@ void ConstraintsGenerator::reconstruct_from_file(QString q_path)
 		}
 
 		Reconstructor recon(focal_length_);
-		recon.reconstruct(vertices_, q, vert_to_face_map_, faces_);
+		std::vector<Eigen::Vector3d> verts_3d;
+		std::vector<Eigen::Vector3i> triangles;
+		recon.reconstruct(vertices_, q, vert_to_face_map_, faces_, verts_3d, triangles);
 	}
 }
 
@@ -780,11 +788,14 @@ void ConstraintsGenerator::output_constraints()
 			f_it != lines_parallel_to_faces_.end(); ++f_it)
 		{
 			std::list<std::pair<int, int>>::iterator pair_it = f_it->begin();
-			out << pair_it->first << " " << pair_it->second;
-			std::advance(pair_it, 1);
-			for (; pair_it != f_it->end(); pair_it++)
-				out << " " << pair_it->first << " " << pair_it->second;
-			out << std::endl;
+			if (pair_it != f_it->end())
+			{
+				out << pair_it->first << " " << pair_it->second;
+				std::advance(pair_it, 1);
+				for (; pair_it != f_it->end(); pair_it++)
+					out << " " << pair_it->first << " " << pair_it->second;
+				out << std::endl;
+			}
 		}
 
 		out.close();

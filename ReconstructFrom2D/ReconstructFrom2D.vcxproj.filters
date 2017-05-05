@@ -151,6 +151,15 @@
     <ClCompile Include="lsd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_MeshModel.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_MeshModel.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ReconstructFrom2D.h">
@@ -178,6 +187,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="DisplayWidget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="MeshModel.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

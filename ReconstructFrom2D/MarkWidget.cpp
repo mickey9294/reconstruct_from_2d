@@ -219,6 +219,7 @@ void MarkWidget::detect_planes()
 void MarkWidget::generate_constraints()
 {
 	displayWidget_->clear_line_segments();
+	displayWidget_->save_current_state();
 
 	if (!constraints_generator_)
 	{
@@ -233,10 +234,14 @@ void MarkWidget::generate_constraints()
 	
 	std::vector<Eigen::Vector2d> refined_vertices;
 	Eigen::VectorXd refined_q;
-	constraints_generator_->add_constraints(refined_vertices, refined_q);
+	MeshModel mesh;
+	constraints_generator_->add_constraints(refined_vertices, refined_q, mesh);
+	//mesh.output("..\\mesh.ply");
 
 	if(!refined_vertices.empty())
 		displayWidget_->update_scene(refined_vertices);
+
+	emit reconstruct_done(mesh, refined_vertices, displayWidget_->get_image());
 }
 
 void MarkWidget::save_scene_state()

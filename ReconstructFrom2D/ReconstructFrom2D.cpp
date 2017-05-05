@@ -7,6 +7,8 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 
 	move(100, 50);
 
+	qRegisterMetaType<MeshModel>("MeshModel");
+	qRegisterMetaType<std::vector<Eigen::Vector2d>>("Verts2D");
 	connect(actionExit.get(), SIGNAL(triggered()), this, SLOT(close()));
 	connect(actionOpen.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(load_images()));
 	connect(actionSaveState.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(save_scene_state()));
@@ -14,6 +16,8 @@ ReconstructFrom2D::ReconstructFrom2D(QWidget *parent)
 	connect(this, SIGNAL(set_images_path_list(QStringList)), markWidget_.get(), SLOT(set_images_path(QStringList)));
 	connect(actionUpdateScene.get(), SIGNAL(triggered()), markWidget_.get(), SLOT(update_scene()));
 	connect(markWidget_.get(), SIGNAL(report_status(QString)), this, SLOT(receive_status(QString)));
+	connect(markWidget_.get(), SIGNAL(reconstruct_done(MeshModel, std::vector<Eigen::Vector2d>, QPixmap)),
+		displayWidget_.get(), SLOT(set_model(MeshModel, std::vector<Eigen::Vector2d>, QPixmap)));
 
 	primary_point_.setZero();
 	focal_length_.setZero();

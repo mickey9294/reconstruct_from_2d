@@ -32,7 +32,7 @@ for i = 1:size(G,1)
     
     gsum = gsum + dot(n1/norm(n1), n2/norm(n2))^2;
 end
-output = output + 10 * gsum;
+output = output + 50 * gsum;
 
 end
 

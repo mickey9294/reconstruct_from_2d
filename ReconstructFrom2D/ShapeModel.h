@@ -44,10 +44,10 @@ public:
 	
 	ModelType get_type();
 	
-	virtual std::string get_input_filepath() const = 0;
+	//virtual std::string get_input_filepath() const = 0;
 	virtual Eigen::Vector3d get_vertex(int index) = 0;
 	virtual Eigen::Vector3d & operator[](int index) = 0;
-	virtual Eigen::Vector3d get_vertex_normal(int index) = 0;
+	//virtual Eigen::Vector3d get_vertex_normal(int index) = 0;
 	virtual int num_vertices() const = 0;
 	virtual Eigen::Vector3d get_centroid() const = 0;
 	virtual double get_radius() const = 0;

@@ -88,6 +88,9 @@
     <ClCompile Include="GeneratedFiles\Debug\moc_MarkWidget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_MeshModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GeneratedFiles\Debug\moc_MyGLWidget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -112,6 +115,9 @@
     <ClCompile Include="GeneratedFiles\Release\moc_MarkWidget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_MeshModel.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="GeneratedFiles\Release\moc_MyGLWidget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -129,6 +135,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MarkGraphicsScene.cpp" />
     <ClCompile Include="MarkWidget.cpp" />
+    <ClCompile Include="MeshModel.cpp" />
     <ClCompile Include="MPFGraph.cpp" />
     <ClCompile Include="MPFVertex.cpp" />
     <ClCompile Include="MyGLWidget.cpp" />
@@ -155,6 +162,16 @@
   <ItemGroup>
     <ClInclude Include="ArtecProcessor.h" />
     <ClInclude Include="lsd.h" />
+    <CustomBuild Include="MeshModel.h">
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing MeshModel.h...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DWIN64 -DQT_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DGLOG_NO_ABBREVIATED_SEVERITIES "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtWidgets" "-ID:\Libraries\opencv\build\include" "-ID:\Libraries\opencv\build\include\opencv2" "-ID:\Libraries\Eigen\include\eigen3" "-ID:\Libraries\Boost\vc140\include\boost-1_61" "-ID:\Projects\planecalib-master\code" "-ID:\Libraries\gflags-master\vc140\Include" "-ID:\Libraries\glog\include" "-ID:\Libraries\Ceres\include" "-ID:\Projects\planecalib-master\build\code" "-ID:\Projects\planecalib-master\build\code\planecalib" "-ID:\Projects\planecalib-master\build\3rdparty\usr\include" "-ID:\Libraries\SuiteSparse\include\suitesparse" "-ID:\ProgrammingTools\Matlab\R2016b\extern\include" "-ID:\Libraries\PCL\vc140\include\pcl-1.8" "-ID:\Libraries\flann\vc140\include" "-ID:\Libraries\Artec 3D Scanning SDK\include"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing MeshModel.h...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DUNICODE -DWIN32 -DWIN64 -DQT_DLL -DQT_NO_DEBUG -DNDEBUG -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DGLOG_NO_ABBREVIATED_SEVERITIES "-I.\GeneratedFiles" "-I." "-I$(QTDIR)\include" "-I.\GeneratedFiles\$(ConfigurationName)\." "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtWidgets" "-ID:\Libraries\opencv\build\include" "-ID:\Libraries\opencv\build\include\opencv2" "-ID:\Libraries\SuiteSparse\include\suitesparse" "-ID:\Libraries\SuiteSparse\include" "-ID:\Projects\planecalib-master\code\planecalib_ui\.." "-ID:\Projects\planecalib-master\build\3rdparty\usr\include" "-ID:\Libraries\Eigen\include\eigen3" "-ID:\Projects\planecalib-master\code\planecalib\.." "-ID:\Projects\planecalib-master\build\code\planecalib" "-ID:\Libraries\matio\include" "-ID:\Libraries\glog\include" "-ID:\Libraries\Boost\vc140\include\boost-1_61" "-ID:\Libraries\Ceres\include" "-ID:\Libraries\PCL\vc140\include\pcl-1.8" "-ID:\Libraries\flann\vc140\include" "-ID:\ProgrammingTools\Matlab\R2016b\extern\include" "-ID:\Libraries\Artec 3D Scanning SDK\include"</Command>
+    </CustomBuild>
     <ClInclude Include="VertexRecognition.h" />
     <CustomBuild Include="MarkGraphicsScene.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>

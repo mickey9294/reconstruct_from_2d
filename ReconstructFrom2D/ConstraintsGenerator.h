@@ -21,6 +21,7 @@
 #include "CameraClibrator.h"
 #include "EquationsSolver.h"
 #include "Reconstructor.h"
+#include "MeshModel.h"
 
 class ConstraintsGenerator : public QObject
 {
@@ -36,7 +37,8 @@ public:
 	static const float t;
 	float Z0;
 
-	void add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
+	void add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q, 
+		MeshModel &mesh);
 
 	void add_connectivity_constraint();
 	void add_perspective_symmetry_constraint();

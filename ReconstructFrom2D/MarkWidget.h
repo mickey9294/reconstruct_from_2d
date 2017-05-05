@@ -41,6 +41,7 @@ signals:
 	void change_label_state();
 	void stop_labeling();
 	void report_status(QString text);
+	void reconstruct_done(MeshModel mesh, std::vector<Eigen::Vector2d> verts_2d, QPixmap image);
 	
 protected:
 	void keyPressEvent(QKeyEvent *event);

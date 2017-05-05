@@ -1,159 +1,176 @@
 ﻿#include "MyGLWidget.h"
 
 MyGLWidget::MyGLWidget(QWidget *parent)
-	: QOpenGLWidget(parent)
+	: QOpenGLWidget(parent),
+	clearColor_(Qt::white),
+	program_(0)
 {
-	m = 1;
-	m_model.reset(new PCModel());
+	scale_ = 1;
 	m_xRot = 0;
 	m_yRot = 0;
 	m_zRot = 0;
-	translation_.setZero();
+	view_z_ = 4.0;
+}
 
-	m_transparent = QCoreApplication::arguments().contains(QStringLiteral("--transparent"));
-	if (m_transparent)
-		setAttribute(Qt::WA_TranslucentBackground);
+MyGLWidget::MyGLWidget(const MeshModel &mesh, const std::vector<Eigen::Vector2d> &verts_2d, const QPixmap &image, QWidget *parent)
+	: QOpenGLWidget(parent),
+	clearColor_(Qt::white),
+	program_(0),
+	scale_(1),
+	m_xRot(0), m_yRot(0), m_zRot(0),
+	view_z_(4.0)
+{
+	const std::vector<std::vector<int>>&face_circuits = mesh.const_faces();
+	const std::vector<Eigen::Vector3d> &verts_3d = mesh.const_vertices();
 
-	setFocusPolicy(Qt::StrongFocus);
+	faces_.resize(face_circuits.size());
+	for (int i = 0; i < face_circuits.size(); i++)
+	{
+		faces_[i].resize(face_circuits[i].size());
+		for (int j = 0; j < face_circuits[i].size(); j++)
+			faces_[i][j] = face_circuits[i][j];
+	}
+
+	verts_3d_.resize(verts_3d.size());
+	for (int i = 0; i < verts_3d.size(); i++)
+	{
+		verts_3d_[i][0] = verts_3d[i][0];
+		verts_3d_[i][1] = verts_3d[i][1];
+		verts_3d_[i][2] = verts_3d[i][2];
+	}
+
+	double width = image.width();
+	double height = image.height();
+	verts_2d_.resize(verts_2d.size());
+	for (int i = 0; i < verts_2d.size(); i++)
+	{
+		verts_2d_[i][0] = width / 2.0 + verts_2d[i][0];
+		verts_2d_[i][1] = height /2.0 - verts_2d[i][1];
+	}
+
+	tex_image_ = image.toImage();
 }
 
 MyGLWidget::~MyGLWidget()
 {
-}
-
-void MyGLWidget::setModel(std::shared_ptr<ShapeModel> model)
-{
-	m_model = model;
-
-	update();
+	makeCurrent();
+	vbo_.destroy();
+	if (textures_)
+		delete textures_;
+	if(program_)
+		delete program_;
+	doneCurrent();
 }
 
 void MyGLWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
-	glClearColor(255, 255, 255, m_transparent ? 0 : 1);
 
-	glClearDepth(1.0f);
+	makeObject();
+
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_COLOR_MATERIAL);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //指定混合函数
-	glDepthFunc(GL_LEQUAL);
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	glShadeModel(GL_SMOOTH);
-	init_light();
-}
+	glDisable(GL_CULL_FACE);
+	
+#define PROGRAM_VERTEX_ATTRIBUTE 0
+#define PROGRAM_TEXCOORD_ATTRIBUTE 1
 
-void MyGLWidget::init_light()
-{
-	GLfloat white_light[] = { 0.23, 0.23, 0.23, 1.0 };
+	QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+	const char *vsrc =
+		"attribute highp vec4 vertex;\n"
+		"attribute mediump vec4 texCoord;\n"
+		"varying mediump vec4 texc;\n"
+		"uniform mediump mat4 matrix;\n"
+		"void main(void)\n"
+		"{\n"
+		"    gl_Position = matrix * vertex;\n"
+		"    texc = texCoord;\n"
+		"}\n";
+	vshader->compileSourceCode(vsrc);
 
-	GLfloat light_position0[] = { 1.0, 1.0, 1.0, 0.0 };
-	GLfloat light_position1[] = { 1.0, 1.0, -1.0, 0.0 };
-	GLfloat light_position2[] = { 1.0, -1.0, 1.0, 0.0 };
-	GLfloat light_position3[] = { 1.0, -1.0, -1.0, 0.0 };
-	GLfloat light_position4[] = { -1.0, 1.0, 1.0, 0.0 };
-	GLfloat light_position5[] = { -1.0, -1.0, 1.0, 0.0 };
-	GLfloat light_position6[] = { -1.0, 1.0, -1.0, 0.0 };
-	GLfloat light_position7[] = { -1.0, -1.0, -1.0, 0.0 };
+	QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+	const char *fsrc =
+		"uniform sampler2D texture;\n"
+		"varying mediump vec4 texc;\n"
+		"void main(void)\n"
+		"{\n"
+		"    gl_FragColor = texture2D(texture, texc.st);\n"
+		"}\n";
+	fshader->compileSourceCode(fsrc);
 
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position0); glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT1, GL_POSITION, light_position1); glLightfv(GL_LIGHT1, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT1, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT2, GL_POSITION, light_position2); glLightfv(GL_LIGHT2, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT2, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT3, GL_POSITION, light_position3); glLightfv(GL_LIGHT3, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT3, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT4, GL_POSITION, light_position4); glLightfv(GL_LIGHT4, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT4, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT5, GL_POSITION, light_position5); glLightfv(GL_LIGHT5, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT5, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT6, GL_POSITION, light_position6); glLightfv(GL_LIGHT6, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT6, GL_SPECULAR, white_light);
-	glLightfv(GL_LIGHT7, GL_POSITION, light_position7); glLightfv(GL_LIGHT7, GL_DIFFUSE, white_light); glLightfv(GL_LIGHT7, GL_SPECULAR, white_light);
+	program_ = new QOpenGLShaderProgram;
+	program_->addShader(vshader);
+	program_->addShader(fshader);
+	program_->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+	program_->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
+	program_->link();
 
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHT2);
-	glEnable(GL_LIGHT3);
-	glEnable(GL_LIGHT4);
-	//glEnable(GL_LIGHT5);
-	//glEnable(GL_LIGHT6);
-	glEnable(GL_LIGHT7);
+	program_->bind();
+	program_->setUniformValue("texture", 0);
+	
 }
 
 void MyGLWidget::paintGL()
 {
+	glClearColor(clearColor_.redF(), clearColor_.greenF(), clearColor_.blueF(), clearColor_.alphaF());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(1.0, 1.0, 1.0, 1.0f);
-	//glEnable(GL_DEPTH_TEST);
-	//if (m_model != NULL)
-	draw();
-	glFlush();
-	glFinish();
-}
 
-void MyGLWidget::draw()
-{
-	glPushMatrix();
+	QMatrix4x4 m;
+	//m.ortho(-0.5f, +0.5f, +0.5f, -0.5f, 4.0f, 15.0f);
+	//m.translate(0.0f, 0.0f, -10.0f);
+	m.rotate(m_xRot / 16.0f, 1.0f, 0.0f, 0.0f);
+	m.rotate(m_yRot / 16.0f, 0.0f, 1.0f, 0.0f);
+	m.rotate(m_zRot / 16.0f, 0.0f, 0.0f, 1.0f);
+	QMatrix4x4 camera;
+	camera.lookAt(QVector3D(0, 0, view_z_), QVector3D(0, 0, 0), QVector3D(0, 1, 0));
 
-	GLfloat no_mat[4] = { 0.0, 0.0, 0, 1 };
-	GLfloat mat_diffuse[4] = { 0, 0, 0, 1 };		//r±íÊ¾´óÖµ£¬b±íÊ¾Ð¡Öµ
-	GLfloat mat_specular[4] = { 0.5, 0.5, 0.5, 1 };
-	float no_shininess[4] = { 1, 1, 1, 0 };
-	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess);
-	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 
-	//glMatrixMode(GL_MODELVIEW);
-	//glLoadIdentity();
+	program_->setUniformValue("matrix", proj_ * camera * m);
+	program_->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+	program_->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+	program_->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat));
+	program_->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
 
-	/*QVector4D eye = QVector4D(0.0, 0.0, m, 1.0);
-	gluLookAt(eye.x(), eye.y(), eye.z(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);*/
+	textures_->bind();
+	GLint start = 0;
+	for (int i = 0; i < faces_.size(); ++i) {
+		glDrawArrays(GL_TRIANGLE_FAN, start, faces_[i].size());
+		start += faces_[i].size();
+	}
 
-	Eigen::Vector3d centroid;
-	if (m_model != NULL)
-		centroid = m_model->get_centroid();
-	else
-		centroid.setZero();
-	glTranslatef(centroid.x(), centroid.y(), centroid.z());
-	glRotatef(m_xRot, 1.0, 0.0, 0.0);
-	glRotatef(m_yRot, 0.0, 1.0, 0.0);
-	glRotatef(m_zRot, 0.0, 0.0, 1.0);
-	glTranslatef(-centroid.x(), -centroid.y(), -centroid.z());
-
-	//glTranslatef(translation_.x(), translation_.y(), translation_.z());
-
-	if (m_model != NULL)
-		m_model->draw(m);
-
-	glPopMatrix();
 }
 
 void MyGLWidget::resizeGL(int width, int height)
 {
-	GLfloat nRange = 5.0f;
-	if (height == 0) {    // Prevent A Divide By Zero By  
-		height = 1;    // Making Height Equal One  
-	}
-	glViewport(0, 0, width, height);    // Reset The Current Viewport  
-	glMatrixMode(GL_PROJECTION);       // Select The Projection Matrix  
-	glLoadIdentity();                  // Reset The Projection Matrix  
+	//GLfloat nRange = 3.0 * std::tan(25.0 * M_PI / 180.0);
 
-	if (width <= height)
-		glOrtho(-nRange, nRange, -nRange*height / width, nRange*height / width, -nRange, nRange);
-	else
-		glOrtho(-nRange*width / height, nRange*width / height, -nRange, nRange, -nRange, nRange);
-	glMatrixMode(GL_MODELVIEW);      // Select The Modelview Matrix  
-	glLoadIdentity();
+	//if (height == 0) {    // Prevent A Divide By Zero By  
+	//	height = 1;    // Making Height Equal One  
+	//}
+	//glViewport(0, 0, width, height);    // Reset The Current Viewport  
+	//glMatrixMode(GL_PROJECTION);       // Select The Projection Matrix  
+	//glLoadIdentity();                  // Reset The Projection Matrix  
+
+	//if (width <= height)
+	//	glOrtho(-nRange, nRange, -nRange*height / width, nRange*height / width, 3.0, 10.0);
+	//else
+	//	glOrtho(-nRange*width / height, nRange*width / height, -nRange, nRange, 3.0, 10.0);
+	//glMatrixMode(GL_MODELVIEW);      // Select The Modelview Matrix  
+	//glLoadIdentity();
+
+	proj_.setToIdentity();
+	proj_.perspective(30.0f, GLfloat(width) / height, 2.0f, 100.0f);
 }
 
 void MyGLWidget::mousePressEvent(QMouseEvent *event)
 {
-	m_lastPos = event->pos();
-	clickEvent = true;
+	lastPos_ = event->pos();
+	//clickEvent = true;
 }
 
 void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-	int dx = event->x() - m_lastPos.x();
-	int dy = event->y() - m_lastPos.y();
+	int dx = event->x() - lastPos_.x();
+	int dy = event->y() - lastPos_.y();
 
 	if (event->buttons() & Qt::LeftButton) {
 		setXRotation(m_xRot + 3 * dy);
@@ -163,24 +180,59 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 		setXRotation(m_xRot + 3 * dy);
 		setZRotation(m_zRot + 3 * dx);
 	}
-	else if (event->buttons() & Qt::MiddleButton)
+	/*else if (event->buttons() & Qt::MiddleButton)
 	{
 		translation_[0] += 0.001 * dx;
 		translation_[1] += 0.001 * dy;
 		update();
-	}
-	m_lastPos = event->pos();
+	}*/
+	lastPos_ = event->pos();
 }
 
 void MyGLWidget::wheelEvent(QWheelEvent *e)
 {
 	if (e->delta()>0)
-		m -= 0.1f;
+		view_z_ -= 0.1f;
 	if (e->delta()<0)
-		m += 0.1f;
-	if (m < 0.1)
-		m = 0.1;
+		view_z_ += 0.1f;
+	if (view_z_ < 0.1)
+		view_z_ = 0.1;
 	update();
+}
+
+void MyGLWidget::makeObject()
+{
+	double width = tex_image_.width();
+	double height = tex_image_.height();
+	textures_ = new QOpenGLTexture(tex_image_);
+	QVector<GLfloat> vertData;
+	for (int i = 0; i < faces_.size(); i++)
+	{
+		std::vector<int> &circuit = faces_[i];
+		faces_[i].resize(circuit.size());
+
+		for (int j = 0; j < circuit.size(); j++)
+		{
+			int vert_id = circuit[j];
+			faces_[i][j] = vert_id;
+
+			const Eigen::Vector3d &vert = verts_3d_[vert_id];
+			const Eigen::Vector2d &vert_2d = verts_2d_[vert_id];
+
+			/* vertex position */
+			vertData.append(scale_ * vert[0]);
+			vertData.append(scale_ * vert[1]);
+			vertData.append(scale_ * vert[2]);
+
+			/* texture coordinate */
+			vertData.append(vert_2d[0] / width);
+			vertData.append(vert_2d[1] / height);
+		}
+	}
+
+	vbo_.create();
+	vbo_.bind();
+	vbo_.allocate(vertData.constData(), vertData.count() * sizeof(GLfloat));
 }
 
 static void qNormalizeAngle(int &angle)
@@ -218,14 +270,6 @@ void MyGLWidget::setZRotation(int angle)
 	}
 }
 
-void MyGLWidget::rotateModel(float angle, float x, float y, float z)
-{
-	if (m_model != NULL)
-	{
-		m_model->rotate(angle, x, y, z);
-		update();
-	}
-}
 
 void MyGLWidget::slotSnapshot(const std::string _filename)
 {
