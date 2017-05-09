@@ -24,7 +24,7 @@ public:
 		const std::vector<std::vector<int>> &parallel_groups, int w, int h);
 	~CameraClibrator();
 
-	void calibrate(float &focal_length, Eigen::Vector2d &primary_point);
+	void calibrate(double &focal_length, Eigen::Vector2d &primary_point);
 
 private:
 	std::vector<Eigen::Vector2d> vertices_;

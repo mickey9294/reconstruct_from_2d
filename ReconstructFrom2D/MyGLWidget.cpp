@@ -22,13 +22,14 @@ MyGLWidget::MyGLWidget(const MeshModel &mesh, const std::vector<Eigen::Vector2d>
 {
 	const std::vector<std::vector<int>>&face_circuits = mesh.const_faces();
 	const std::vector<Eigen::Vector3d> &verts_3d = mesh.const_vertices();
+	const std::vector<Eigen::Vector3i> &triangles = mesh.const_triangles();
 
-	faces_.resize(face_circuits.size());
-	for (int i = 0; i < face_circuits.size(); i++)
+	faces_.resize(triangles.size());
+	for (int i = 0; i < triangles.size(); i++)
 	{
-		faces_[i].resize(face_circuits[i].size());
-		for (int j = 0; j < face_circuits[i].size(); j++)
-			faces_[i][j] = face_circuits[i][j];
+		faces_[i][0] = triangles[i][0];
+		faces_[i][1] = triangles[i][1];
+		faces_[i][2] = triangles[i][2];
 	}
 
 	verts_3d_.resize(verts_3d.size());
@@ -131,10 +132,10 @@ void MyGLWidget::paintGL()
 	program_->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
 
 	textures_->bind();
-	GLint start = 0;
+	//GLint start = 0;
 	for (int i = 0; i < faces_.size(); ++i) {
-		glDrawArrays(GL_TRIANGLE_FAN, start, faces_[i].size());
-		start += faces_[i].size();
+		glDrawArrays(GL_TRIANGLES, 3 * i, 3);
+		//start += faces_[i].size();
 	}
 
 }
@@ -208,14 +209,11 @@ void MyGLWidget::makeObject()
 	QVector<GLfloat> vertData;
 	for (int i = 0; i < faces_.size(); i++)
 	{
-		std::vector<int> &circuit = faces_[i];
-		faces_[i].resize(circuit.size());
+		Eigen::Vector3i triangle = faces_[i];
 
-		for (int j = 0; j < circuit.size(); j++)
+		for (int j = 0; j < 3; j++)
 		{
-			int vert_id = circuit[j];
-			faces_[i][j] = vert_id;
-
+			int vert_id = triangle[j];
 			const Eigen::Vector3d &vert = verts_3d_[vert_id];
 			const Eigen::Vector2d &vert_2d = verts_2d_[vert_id];
 

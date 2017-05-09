@@ -77,7 +77,7 @@ CameraClibrator::~CameraClibrator()
 {
 }
 
-void CameraClibrator::calibrate(float & focal_length, Eigen::Vector2d & primary_point)
+void CameraClibrator::calibrate(double & focal_length, Eigen::Vector2d & primary_point)
 {
 	focal_length = 0;
 	primary_point.setZero();
@@ -120,7 +120,7 @@ void CameraClibrator::calibrate(float & focal_length, Eigen::Vector2d & primary_
 			}
 		}
 
-		vanishing_point /= (float)vp_count;
+		vanishing_point /= (double)vp_count;
 		vp_list.push_back(vanishing_point);
 	}
 
@@ -132,7 +132,7 @@ void CameraClibrator::calibrate(float & focal_length, Eigen::Vector2d & primary_
 		{
 			Eigen::Vector2d vp2 = vp_list[j].head(2);
 
-			float mid = -vp1.dot(vp2);
+			double mid = -vp1.dot(vp2);
 			if (mid >= 0)
 			{
 				focal_length += std::sqrt(mid);
@@ -162,10 +162,10 @@ Eigen::Vector3d CameraClibrator::get_line_equation(int line_id)
 		return Eigen::Vector3d(1, 0, -v1.x());
 	}
 
-	float slope = (v2.y() - v1.y()) / (v2.x() - v1.x());
-	float a = slope;
-	float b = -1;
-	float c = -slope * v1.x() + v1.y();
+	double slope = (v2.y() - v1.y()) / (v2.x() - v1.x());
+	double a = slope;
+	double b = -1;
+	double c = -slope * v1.x() + v1.y();
 	
 	if(std::abs(c) > 1.0e-8)
 	{

@@ -29,13 +29,13 @@ class ConstraintsGenerator : public QObject
 
 public:
 	ConstraintsGenerator(QObject *parent = 0);
-	ConstraintsGenerator(const std::string &image_path, float w, float h, const std::list<QPointF> &vertices,
+	ConstraintsGenerator(const std::string &image_path, double w, double h, const std::list<QPointF> &vertices,
 		const std::list<Line> &edges, const std::vector<std::vector<int>> & face_circuits,
 		const std::list<std::vector<int>> &parallel_group, const std::vector<int> &precies_id, QObject *parent = 0);
 	~ConstraintsGenerator();
 
-	static const float t;
-	float Z0;
+	static const double t;
+	double Z0;
 
 	void add_constraints(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q, 
 		MeshModel &mesh);
@@ -48,12 +48,12 @@ public:
 
 	void set_parallel_groups(const std::list<std::vector<int>> &parallel_group);
 
-	float get_focal_length() const;
+	double get_focal_length() const;
 
 	void reconstruct_from_file(QString q_path);
 
 	void reset();
-	void reset(const std::string &image_path, float w, float h, const std::list<QPointF> &vertices,
+	void reset(const std::string &image_path, double w, double h, const std::list<QPointF> &vertices,
 		const std::list<Line> &edges, const std::vector<std::vector<int>> & face_circuits,
 		const std::list<std::vector<int>> &parallel_group);
 
@@ -61,9 +61,9 @@ signals:
 	void report_status(QString msg);
 	
 private:
-	float focal_length_;
-	float width_;
-	float height_;
+	double focal_length_;
+	double width_;
+	double height_;
 	Eigen::Vector2d primary_point_;
 	Eigen::Matrix3d calib_mat_;
 
@@ -84,7 +84,7 @@ private:
 	Eigen::MatrixXd E_;
 	std::vector<std::pair<int, int>> G_;
 	Eigen::MatrixXd Ad_;
-	//Eigen::MatrixXd Bd_;
+	Eigen::MatrixXd Bd_;
 	Eigen::MatrixXd Cd_;
 
 	std::shared_ptr<EquationsSolver> equations_solver_;
@@ -116,4 +116,6 @@ private:
 	void update_environment(const std::vector<Eigen::Vector2d> &refined_vertices);
 
 	bool is_precise(int vert_id);
+
+	void run_solver(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
 };

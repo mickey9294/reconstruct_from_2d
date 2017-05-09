@@ -71,7 +71,7 @@ private:
 	QOpenGLShaderProgram *program_;
 	QOpenGLBuffer vbo_;
 
-	std::vector<std::vector<int>> faces_;
+	std::vector<Eigen::Vector3i> faces_;
 	std::vector<Eigen::Vector3d> verts_3d_;
 	std::vector<Eigen::Vector2d> verts_2d_;
 	QImage tex_image_;

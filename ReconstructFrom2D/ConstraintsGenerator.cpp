@@ -1,13 +1,13 @@
 #include "ConstraintsGenerator.h"
 
-const float ConstraintsGenerator::t = 100;
+const double ConstraintsGenerator::t = 100;
 
 ConstraintsGenerator::ConstraintsGenerator(QObject *parent)
 	: QObject(parent)
 {
 }
 
-ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, float w, float h, const std::list<QPointF>& vertices,
+ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, double w, double h, const std::list<QPointF>& vertices,
 	const std::list<Line>& edges, const std::vector<std::vector<int>> & face_circuits, const std::list<std::vector<int>> &parallel_group,
 	const std::vector<int> &precise_id, QObject *parent)
 	: QObject(parent)
@@ -87,15 +87,12 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined
 
 	output_constraints();
 
-	emit report_status("Adding constraints done.");
-
 	std::vector<Eigen::Vector3d> verts_3d;
 	std::vector<Eigen::Vector3i> triangles;
 
-	if (!equations_solver_)
-		equations_solver_.reset(new EquationsSolver());
+	emit report_status("Adding constraints done.");
 
-	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+	run_solver(refined_vertices, refined_q);
 
 	update_environment(refined_vertices);
 
@@ -109,7 +106,7 @@ void ConstraintsGenerator::add_constraints(std::vector<Eigen::Vector2d> &refined
 	std::chrono::milliseconds end_time = std::chrono::duration_cast<std::chrono::milliseconds>(
 		std::chrono::system_clock::now().time_since_epoch());
 	
-	float duration = (float)(end_time.count() - start_time.count()) / 1000.0;
+	double duration = (double)(end_time.count() - start_time.count()) / 1000.0;
 	emit report_status("Reconstruction done. Time cost: " + QString::number(duration));
 }
 
@@ -225,6 +222,34 @@ void ConstraintsGenerator::add_perspective_symmetry_constraint()
 			B_.row(row_idx) = *row_it;
 
 		//std::cout << B_ << std::endl;
+
+		in.close();
+	}
+
+	in.open("..\\matlab\\Bd.csv");
+	if (in.is_open())
+	{
+		std::list<Eigen::VectorXd> rows;
+		std::string line;
+		std::vector<std::string> line_split;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+			{
+				boost::split(line_split, line, boost::is_any_of(","), boost::token_compress_on);
+				Eigen::VectorXd row(line_split.size());
+				for (int i = 0; i < line_split.size(); i++)
+					row[i] = std::stof(line_split[i]);
+
+				rows.push_back(row);
+			}
+		}
+
+		Bd_.resize(rows.size(), 3 * faces_.size());
+		int row_idx = 0;
+		for (std::list<Eigen::VectorXd>::iterator row_it = rows.begin(); row_it != rows.end(); ++row_it, ++row_idx)
+			Bd_.row(row_idx) = *row_it;
 
 		in.close();
 	}
@@ -436,7 +461,7 @@ void ConstraintsGenerator::set_parallel_groups(const std::list<std::vector<int>>
 	}
 }
 
-float ConstraintsGenerator::get_focal_length() const
+double ConstraintsGenerator::get_focal_length() const
 {
 	return focal_length_;
 }
@@ -479,7 +504,7 @@ void ConstraintsGenerator::reset()
 	G_.clear();
 }
 
-void ConstraintsGenerator::reset(const std::string & image_path, float w, float h, const std::list<QPointF>& vertices,
+void ConstraintsGenerator::reset(const std::string & image_path, double w, double h, const std::list<QPointF>& vertices,
 	const std::list<Line>& edges, const std::vector<std::vector<int>>& face_circuits, const std::list<std::vector<int>>& parallel_group)
 {
 	primary_point_[0] = w / 2.0;
@@ -555,8 +580,8 @@ void ConstraintsGenerator::map_verts_to_face(const std::vector<PlanarFace>& face
 Eigen::MatrixXd ConstraintsGenerator::form_S(const Eigen::Vector3d & v1, const Eigen::Vector3d & v2)
 {
 	Eigen::MatrixXd s(3, 9);
-	float x1 = v1[0], y1 = v1[1], z1 = v1[2];
-	float x2 = v2[0], y2 = v2[1], z2 = v2[2];
+	double x1 = v1[0], y1 = v1[1], z1 = v1[2];
+	double x2 = v2[0], y2 = v2[1], z2 = v2[2];
 	s.block<1, 9>(0, 0) << 0, 0, 0, -x2*z1, -y2*z1, -z1*z2, x2*y1, y1*y2, y1 * z2;
 	s.block<1, 9>(1, 0) << x2 * z1, y2*z1, z1*z2, 0, 0, 0, -x1*x2, -x1*y2, -x1*z2;
 	s.block<1, 9>(2, 0) << -x2*y1, -y1*y2, -y1*z2, x1*x2, x1*y2, x1*z2, 0, 0, 0;
@@ -655,10 +680,10 @@ Eigen::Vector3d ConstraintsGenerator::get_line_equation(int line_id)
 			return Eigen::Vector3d(1.0, 0, -v1.x());
 	}
 
-	float slope = (v2.y() - v1.y()) / (v2.x() - v1.x());
-	float a = slope;
-	float b = -1;
-	float c = -slope * v1.x() + v1.y();
+	double slope = (v2.y() - v1.y()) / (v2.x() - v1.x());
+	double a = slope;
+	double b = -1;
+	double c = -slope * v1.x() + v1.y();
 
 	if (std::abs(c) > 1e-8)
 	{
@@ -923,5 +948,67 @@ bool ConstraintsGenerator::is_precise(int vert_id)
 	}
 
 	return false;
+}
+
+void ConstraintsGenerator::run_solver(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q)
+{
+	if (!equations_solver_)
+		equations_solver_.reset(new EquationsSolver());
+
+	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+
+	/*int precise_vert = -1;
+	int precise_idx;
+	if (!precise_vertices_id_.empty())
+	{
+		precise_vert = precise_vertices_id_[0];
+		precise_idx = 1;
+	}
+	std::vector<int> imprecise_vertices(vertices_.size() - precise_vertices_id_.size());
+	int idx = 0;
+	for (int i = 0; i < vertices_.size(); i++)
+	{
+		if (precise_vert < 0 || i != precise_vert)
+			imprecise_vertices[idx++] = i;
+		else if(precise_idx >= 0 && precise_idx < precise_vertices_id_.size())
+			precise_vert = precise_vertices_id_[precise_idx++];
+	}
+
+	std::vector<int> precise_sym_faces;
+	std::ifstream in("..\\matlab\\precise_sym_faces.csv");
+	if (in.is_open())
+	{
+		std::string line;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+				precise_sym_faces.push_back(std::stoi(line) - 1);
+		}
+		precise_sym_faces.shrink_to_fit();
+
+		in.close();
+	}
+
+	std::vector<int> perspective_syms;
+	in.open("..\\matlab\\perspective_syms.txt");
+	if (in.is_open())
+	{
+		std::string line;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+				perspective_syms.push_back(std::stoi(line) - 1);
+		}
+		perspective_syms.shrink_to_fit();
+
+		in.close();
+	}
+
+	equations_solver_->set_constraints_environment(A_, B_, C_, E_, G_, Ad_, Bd_, Cd_,
+		vertices_, edges_, faces_, vert_to_face_map_, imprecise_vertices,
+		precise_sym_faces, perspective_syms, lines_parallel_to_faces_, focal_length_);
+	equations_solver_->lindo_solve(refined_vertices, refined_q);*/
 }
 

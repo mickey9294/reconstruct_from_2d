@@ -129,6 +129,11 @@ void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2d>& refined
 		(*li_it)->setPen(line_pen_);
 	}
 	update();
+
+	/* Reset parallel information */
+	parallel_lines_group_.clear();
+	std::fill(line_chosen_before_.begin(), line_chosen_before_.end(), false);
+	current_parallel_group_.clear();
 }
 
 void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id, const std::vector<QPointF>& precise_vertices)
