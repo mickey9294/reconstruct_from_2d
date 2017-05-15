@@ -14,6 +14,11 @@ EquationsSolver::EquationsSolver()
 {
 }
 
+EquationsSolver::EquationsSolver(const std::string & image_name)
+	: environment_(NULL), image_name_(image_name)
+{
+}
+
 
 EquationsSolver::~EquationsSolver()
 {
@@ -51,8 +56,17 @@ void EquationsSolver::solve(int Nf, int Nv,
 	engEvalString(ep, "cd \'D:\\Projects\\reconstruct_from_2d\\matlab\';");
 
 	/* Reconstruct the rough 3D shape */
-	std::string rough_recon_cmd = "solve_O3dr(" + std::to_string(Nf) + ");";
-	engEvalString(ep, rough_recon_cmd.c_str());
+	std::string start_point_path = "..\\start_points\\" + image_name_ + ".csv";
+	if (!boost::filesystem::exists(boost::filesystem::path(start_point_path)))
+	{
+		std::string rough_recon_cmd = "solve_O3dr(" + std::to_string(Nf) + ");";
+		engEvalString(ep, rough_recon_cmd.c_str());
+	}
+	else
+	{
+		std::string load_q0_cmd = "load_start_point(\'" + image_name_ + "\');";
+		engEvalString(ep, load_q0_cmd.c_str());
+	}
 
 	/* Constraint refinement and joint optimization */
 	engEvalString(ep, "solve_q_x();");

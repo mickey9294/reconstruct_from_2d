@@ -14,6 +14,8 @@
 #include <Eigen\Core>
 #include <Eigen\Eigenvalues>
 
+#include <boost\filesystem.hpp>
+
 #include <engine.h>
 
 #include "PlanarFace.h"
@@ -66,6 +68,7 @@ private:
 	double height_;
 	Eigen::Vector2d primary_point_;
 	Eigen::Matrix3d calib_mat_;
+	std::string image_name_;
 
 	std::vector<Eigen::Vector2d> vertices_;
 	std::vector<int> precise_vertices_id_;

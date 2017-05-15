@@ -144,6 +144,17 @@ void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id,
 	precise_pen.setWidth(1);
 	QBrush precise_brush(QColor(255, 153, 0), Qt::SolidPattern);
 
+	/* reset colors of all vertices */
+	if (!precise_verts_id_.empty())
+	{
+		for (std::list<QGraphicsEllipseItem *>::iterator vert_item_it = vertex_item_stack_.begin();
+			vert_item_it != vertex_item_stack_.end(); ++vert_item_it)
+		{
+			(*vert_item_it)->setPen(vertex_pen_);
+			(*vert_item_it)->setBrush(vertex_brush_);
+		}
+	}
+
 	precise_verts_id_.resize(precise_id.size());
 	for (int i = 0; i < precise_id.size(); i++)
 	{

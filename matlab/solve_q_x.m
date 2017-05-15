@@ -6,8 +6,8 @@ global x0;
 x0 = load('x0.csv');
 q0 = load('q0.csv');
 
-dlmwrite('xi.csv', x0);
-dlmwrite('qi.csv', q0);
+%dlmwrite('xi.csv', x0);
+%dlmwrite('qi.csv', q0);
 
 global vert_face_map;
 vert_face_map = read_list('vert_face_map.txt', size(x0, 1));
@@ -40,7 +40,11 @@ precise_sym_faces = load('precise_sym_faces.csv');
 global Ad;
 Ad = load('Ad.csv');
 global Bd;
-Bd = load('Bd.csv');
+if exist('Bd.csv', 'file')
+    Bd = load('Bd.csv');
+else
+    Bd = [];
+end
 global Cd;
 Cd = load('Cd.csv');
 global E;
@@ -80,6 +84,11 @@ while true
 %        dlmwrite('qi.csv', qi);
    end
    i = i + 1;
+end
+
+F0 = F_q_x(q0, x0);
+if Fiplus1 > F0
+    qiplus1 = q0;
 end
 
 dlmwrite('xi_1.csv', full_x);

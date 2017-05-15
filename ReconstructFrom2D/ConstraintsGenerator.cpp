@@ -64,6 +64,9 @@ ConstraintsGenerator::ConstraintsGenerator(const std::string &image_path, double
 	calib_mat_.setIdentity();
 	calib_mat_(0, 0) = -focal_length_;
 	calib_mat_(1, 1) = -focal_length_;
+
+	boost::filesystem::path p(image_path);
+	image_name_ = p.stem().string();
 }
 
 
@@ -330,7 +333,7 @@ void ConstraintsGenerator::add_line_parallelism_constrain()
 								Eigen::Vector3d line_1 = get_line_equation(paraline_1);
 								Eigen::Vector3d line_2 = get_line_equation(paraline_2);
 								Eigen::Vector3d v = line_1.cross(line_2);
-								assert(std::abs(v[2]) > 1e-8);
+								assert(std::abs(v[2]) > 1e-10);
 								v[0] /= v[2];
 								v[1] /= v[2];
 								v[2] = 1.0;
@@ -953,7 +956,7 @@ bool ConstraintsGenerator::is_precise(int vert_id)
 void ConstraintsGenerator::run_solver(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q)
 {
 	if (!equations_solver_)
-		equations_solver_.reset(new EquationsSolver());
+		equations_solver_.reset(new EquationsSolver(image_name_));
 
 	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
 

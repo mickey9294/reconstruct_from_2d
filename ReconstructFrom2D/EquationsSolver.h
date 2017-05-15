@@ -10,6 +10,7 @@
 #include <Eigen\Dense>
 
 #include <boost\algorithm\string.hpp>
+#include <boost\filesystem.hpp>
 
 #include <engine.h>
 
@@ -68,6 +69,7 @@ class EquationsSolver
 {
 public:
 	EquationsSolver();
+	EquationsSolver(const std::string &image_name);
 	~EquationsSolver();
 
 	void set_constraints_environment(const Eigen::MatrixXd &_A, const Eigen::MatrixXd _B,
@@ -87,6 +89,7 @@ public:
 	void lindo_solve(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
 
 private:
+	std::string image_name_;
 	ConstraintsEnvironment * environment_;
 
 	static double fixed_depth;

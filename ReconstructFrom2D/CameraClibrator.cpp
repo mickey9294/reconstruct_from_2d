@@ -109,7 +109,7 @@ void CameraClibrator::calibrate(double & focal_length, Eigen::Vector2d & primary
 				Eigen::Vector3d line_2 = get_line_equation(line_id_2);
 
 				Eigen::Vector3d vp = line_1.cross(line_2);
-				assert(std::abs(vp[2]) > 1e-8);
+				assert(std::abs(vp[2]) > 1e-10);
 
 				vp[0] /= vp[2];
 				vp[1] /= vp[2];

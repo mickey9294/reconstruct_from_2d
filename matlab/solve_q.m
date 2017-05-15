@@ -9,7 +9,8 @@ function qiplus1 = solve_q()
 global qi;
 
 [Aeq, beq] = form_fix_constraints();
-qiplus1 = fmincon(@solve_q_function, qi, [], [], Aeq, beq);
+%before = solve_q_function(qi);
+[qiplus1, fval] = fmincon(@solve_q_function, qi, [], [], Aeq, beq);
 
 dlmwrite('qi_1.csv', qiplus1);
 
