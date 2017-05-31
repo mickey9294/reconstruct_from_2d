@@ -1,0 +1,196 @@
+ MIDACO - SOLUTION
+ -----------------
+
+ This file saves the current best solution X found by MIDACO.
+ This file is updated after every PRINTEVAL function evaluation,
+ if X has been improved.
+
+
+ *** MIDACO INPUT ERROR ***   ( IFLAG =   999 )
+
+
+
+
+         BEST SOLUTION FOUND BY MIDACO
+ --------------------------------------------
+ EVAL:         1,  TIME:    0.00,  IFLAG: 999 
+ --------------------------------------------
+ f[0] =                     5.381112409604382 
+ --------------------------------------------
+ g[   0] =     -0.00658699  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   1] =      0.00426877  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   2] =      0.00704292  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   3] =      0.00835123  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   4] =     -0.00327786  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   5] =      0.00760125  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   6] =     -0.01190382  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   7] =      0.01237094  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   8] =     -0.00232368  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[   9] =     -0.01044132  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  10] =     -0.00828629  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  11] =     -0.00270164  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  12] =     -0.00324414  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  13] =      0.00030327  (EQUALITY CONSTR)
+ g[  14] =     -0.00620624  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  15] =     -0.00569725  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  16] =     -0.00585015  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  17] =     -0.00131186  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  18] =     -0.00301356  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  19] =     -0.00759814  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  20] =     -0.00458210  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  21] =     -0.00628738  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  22] =     -0.00662061  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  23] =     -0.00185183  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  24] =      0.00214017  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  25] =     -0.00037022  (EQUALITY CONSTR)
+ g[  26] =      0.00150397  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  27] =     -0.01992882  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  28] =      0.00001233  (EQUALITY CONSTR)
+ g[  29] =      0.02376751  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  30] =      0.00369334  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  31] =     -0.02004094  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  32] =      0.00023036  (EQUALITY CONSTR)
+ g[  33] =     -0.05127508  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  34] =     -0.00243569  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  35] =      0.05274348  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  36] =      0.01019080  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  37] =      0.00151094  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  38] =      0.00143745  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  39] =      0.03065669  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  40] =      0.00010829  (EQUALITY CONSTR)
+ g[  41] =      0.00014112  (EQUALITY CONSTR)
+ g[  42] =      0.00266552  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  43] =      0.00237712  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  44] =      0.00299161  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  45] =      0.00300497  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  46] =      0.00324853  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  47] =      0.00318381  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  48] =      0.00019141  (EQUALITY CONSTR)
+ g[  49] =      0.00018274  (EQUALITY CONSTR)
+ g[  50] =      0.00018581  (EQUALITY CONSTR)
+ g[  51] =      0.00023047  (EQUALITY CONSTR)
+ g[  52] =     -0.00003198  (EQUALITY CONSTR)
+ g[  53] =      0.00019794  (EQUALITY CONSTR)
+ g[  54] =      0.00314986  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  55] =      0.00359392  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  56] =      0.00298487  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  57] =      0.00329419  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  58] =      0.00305694  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  59] =      0.00262181  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  60] =      0.00195697  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  61] =      0.00143990  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  62] =      0.00140435  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  63] =      0.00135640  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  64] =      0.00122611  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  65] =      0.00148705  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  66] =      0.00154015  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  67] =      0.00129811  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  68] =     -0.00169184  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  69] =      0.01749128  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  70] =      0.00239760  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  71] =      0.00210663  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  72] =      0.00346673  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  73] =      0.00280673  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  74] =      0.00292957  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  75] =      0.00210015  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  76] =      0.00276960  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  77] =      0.00302760  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  78] =     -0.03515345  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  79] =      0.00017787  (EQUALITY CONSTR)
+ g[  80] =      0.00020738  (EQUALITY CONSTR)
+ g[  81] =      0.00013629  (EQUALITY CONSTR)
+ g[  82] =      0.00009563  (EQUALITY CONSTR)
+ g[  83] =      0.00016041  (EQUALITY CONSTR)
+ g[  84] =      0.00290278  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  85] =      0.00345421  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  86] =      0.00269312  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  87] =      0.00310504  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  88] =      0.00278839  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  89] =      0.00198366  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  90] =      0.03195172  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[  91] =      0.00023199  (EQUALITY CONSTR)
+ g[  92] =      0.00012132  (EQUALITY CONSTR)
+ g[  93] =      0.00009473  (EQUALITY CONSTR)
+ g[  94] =      0.00028556  (EQUALITY CONSTR)
+ g[  95] =      0.00025885  (EQUALITY CONSTR)
+ g[  96] =      0.00029536  (EQUALITY CONSTR)
+ g[  97] =      0.00030269  (EQUALITY CONSTR)
+ g[  98] =      0.00028196  (EQUALITY CONSTR)
+ g[  99] =      0.00017906  (EQUALITY CONSTR)
+ g[ 100] =      0.00155154  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 101] =      0.00140537  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 102] =     -0.00040023  (EQUALITY CONSTR)
+ g[ 103] =      0.00147486  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 104] =      0.00896107  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 105] =      0.00194984  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 106] =      0.00151363  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 107] =      0.00178262  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 108] =      0.00144007  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 109] =      0.00119788  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 110] =      0.00143517  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 111] =      0.00137437  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 112] =      0.00134414  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 113] =      0.00138472  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 114] =      0.00137217  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 115] =      0.00140023  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 116] =      0.00312125  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 117] =      0.00313330  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 118] =      0.00318059  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 119] =      0.00305549  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 120] =      0.00334004  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 121] =      0.00325642  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 122] =      0.00012593  (EQUALITY CONSTR)
+ g[ 123] =      0.00012697  (EQUALITY CONSTR)
+ g[ 124] =      0.00014410  (EQUALITY CONSTR)
+ g[ 125] =      0.00004234  (EQUALITY CONSTR)
+ g[ 126] =      0.00021996  (EQUALITY CONSTR)
+ g[ 127] =      0.00021133  (EQUALITY CONSTR)
+ g[ 128] =      0.00318075  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 129] =      0.00299591  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 130] =      0.00311940  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 131] =      0.00306519  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 132] =      0.00313436  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 133] =      0.00326312  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 134] =      0.00016573  (EQUALITY CONSTR)
+ g[ 135] =      0.00037182  (EQUALITY CONSTR)
+ g[ 136] =      0.00020284  (EQUALITY CONSTR)
+ g[ 137] =      0.00018815  (EQUALITY CONSTR)
+ g[ 138] =      0.00025849  (EQUALITY CONSTR)
+ g[ 139] =      0.00021437  (EQUALITY CONSTR)
+ g[ 140] =     -0.00247699  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 141] =      0.00157966  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 142] =      0.00152531  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 143] =      0.00107095  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 144] =      0.00085370  (EQUALITY CONSTR)
+ g[ 145] =      0.00171341  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ g[ 146] =      0.01840720  (EQUALITY CONSTR)  <---  INFEASIBLE  ( G NOT = 0 )
+ --------------------------------------------         BOUNDS-PROFIL    
+ x[   0] =                 0.000604050000000;  /* __________x__________ */
+ x[   1] =                -0.000296540000000;  /* __________x__________ */
+ x[   2] =                 0.000507910000000;  /* __________x__________ */
+ x[   3] =                -0.000487700000000;  /* __________x__________ */
+ x[   4] =                 0.001813800000000;  /* __________x__________ */
+ x[   5] =                 0.000692500000000;  /* __________x__________ */
+ x[   6] =                 0.001660500000000;  /* __________x__________ */
+ x[   7] =                 0.001859000000000;  /* __________x__________ */
+ x[   8] =                 0.000502680000000;  /* __________x__________ */
+ x[   9] =                 0.002041000000000;  /* __________x__________ */
+ x[  10] =                 0.002016300000000;  /* __________x__________ */
+ x[  11] =                 0.000105140000000;  /* __________x__________ */
+ x[  12] =                -0.001338300000000;  /* __________x__________ */
+ x[  13] =                 0.002114400000000;  /* __________x__________ */
+ x[  14] =                 0.000056298000000;  /* __________x__________ */
+ x[  15] =                 0.000562770000000;  /* __________x__________ */
+ x[  16] =                -0.000129620000000;  /* __________x__________ */
+ x[  17] =                 0.000684820000000;  /* __________x__________ */
+ x[  18] =                 0.001727700000000;  /* __________x__________ */
+ x[  19] =                 0.001977500000000;  /* __________x__________ */
+ x[  20] =                 0.000406430000000;  /* __________x__________ */
+ x[  21] =                -0.000768160000000;  /* __________x__________ */
+ x[  22] =                 0.001932600000000;  /* __________x__________ */
+ x[  23] =                 0.000555830000000;  /* __________x__________ */
+ x[  24] =                 0.000538550000000;  /* __________x__________ */
+ x[  25] =                -0.001609600000000;  /* __________x__________ */
+ x[  26] =                -0.000161120000000;  /* __________x__________ */
+ 
+ 

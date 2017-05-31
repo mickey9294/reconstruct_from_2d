@@ -51,6 +51,7 @@ private:
 	std::shared_ptr<QPushButton> undoButton_;
 	std::shared_ptr<QPushButton> loadButton_;
 	std::shared_ptr<QPushButton> resetButton_;
+	std::shared_ptr<QPushButton> connectButton_;
 	std::shared_ptr<QPushButton> recognitionButton_;
 	std::shared_ptr<QPushButton> detectPlanesButton_;
 	std::shared_ptr<QPushButton> addConstraintsButton_;

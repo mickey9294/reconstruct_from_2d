@@ -120,5 +120,5 @@ private:
 
 	bool is_precise(int vert_id);
 
-	void run_solver(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
+	bool run_solver(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
 };

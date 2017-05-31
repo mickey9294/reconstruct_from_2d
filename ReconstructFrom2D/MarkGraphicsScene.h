@@ -25,6 +25,8 @@
 #include <boost\algorithm\string.hpp>
 
 #include "Line.h"
+#include "VertexRecognition.h"
+#include "VerticesConnector.h"
 
 class MarkGraphicsScene : public QGraphicsView
 {
@@ -55,7 +57,7 @@ public:
 	void set_line_segments(const std::vector<std::vector<QLineF>> &line_segments);
 	void clear_line_segments();
 	std::vector<int> &get_precises_vertices();
-
+	
 	public slots:
 	void undo();
 	void reset();
@@ -66,6 +68,7 @@ public:
 	void finish_label_parallelism();
 	void save_current_state();
 	void load_current_state();
+	void auto_connect();
 
 signals:
 	void resize_main_window(int dw, int dh);
@@ -89,6 +92,8 @@ private:
 	QPen line_pen_;
 	QPen vertex_pen_;
 	QBrush vertex_brush_;
+	QPen precise_pen_;
+	QBrush precise_brush_;
 	QPen focus_pen_;
 	QPen parallel_pen_;
 
@@ -113,6 +118,8 @@ private:
 
 	QGraphicsTextItem *number_item_;
 
+	std::shared_ptr<VertexRecognition> recognition_;
+
 	std::list<Line> line_list_;
 	std::list<QGraphicsLineItem *> line_item_stack_;
 	std::list<QPointF> vertex_list_;
@@ -124,7 +131,9 @@ private:
 	std::list<QGraphicsLineItem *> ls_item_stack_;
 
 	std::vector<std::vector<int>> face_circuits_;
+
 	std::vector<int> precise_verts_id_;
+	std::list<bool> precise_stack_;
 
 	//void makeItemsControllable(bool areControllable);
 	int find_nearest_vertex(const QPointF &point, QPointF &nearest_vertex);

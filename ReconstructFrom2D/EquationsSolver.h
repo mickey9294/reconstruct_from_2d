@@ -14,12 +14,9 @@
 
 #include <engine.h>
 
-//#include <NLF.h>
-//#include <LinearEquation.h>
-//#include <OptQNIPS.h>
-//#include <newmat.h>
 #include <armadillo>
 #include <lindo.h>
+#include <optimization.h>
 
 #include "PlanarFace.h"
 #include "Line.h"
@@ -38,6 +35,9 @@ struct ConstraintsEnvironment {
 	Eigen::MatrixXd Ad;
 	Eigen::MatrixXd Bd;
 	Eigen::MatrixXd Cd;
+	Eigen::MatrixXd Au;
+	Eigen::MatrixXd Bu;
+	Eigen::MatrixXd Cu;
 
 	std::vector<Eigen::Vector2d> verts_2d;
 	std::vector<Line> edges;
@@ -86,13 +86,24 @@ public:
 
 	int lindo_solve_q();
 	int lindo_solve_x();
-	void lindo_solve(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
+	bool lindo_solve(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
+
+	void alg_solve_q();
+	void alg_solve_q_nc();
+	void alg_solve_x();
+	void alg_solve_x_nc();
+	void alg_solve_quadratic_q();
+	bool alg_solve(std::vector<Eigen::Vector2d> &refined_vertices, Eigen::VectorXd &refined_q);
+
+	void midaco_solve_q();
+	void madaco_solve_initial_q();
 
 private:
 	std::string image_name_;
 	ConstraintsEnvironment * environment_;
 
-	static double fixed_depth;
+	static const double FIXED_DEPTH;
+	static const double NEIGHBORHOOD;
 
 	//void init_q_function(int ndim, ColumnVector &q);
 	//void q_function(int mode, int ndim, const ColumnVector &q, double &fq, ColumnVector &gx, int &result);
@@ -109,20 +120,51 @@ private:
 
 	static int find_in_imprecise(int vert_id, const std::vector<int> &imprecise_vertices);
 
-	int num_contraints_rows();
+	int num_constraints_rows();
+	int num_q_equations();
+	int num_x_equations();
 
 	static int  LS_CALLTYPE local_sol_log(pLSmodel model, int iLoc, void *cbData);
 	static int  CALLBACKTYPE Funcalcq(pLSmodel pModel, void    *pUserData,
 		int      nRow, double  *pdX,
 		int      nJDiff, double  dXJBase,
 		double   *pdFuncVal, int  *pReserved);
+	static double simple_Funcalcq(const Eigen::VectorXd &q, ConstraintsEnvironment *cons_env);
+	static double simple_Funcalcq(const alglib::real_1d_array &qarr, ConstraintsEnvironment *cons_env);
+	static double simple_Funcalcx(const alglib::real_1d_array &xarr, ConstraintsEnvironment *cons_env);
+	static int CALLBACKTYPE Gradcalcq(pLSmodel pModel, void *pUserData,
+		int nRow, double *pdX, double *lb,
+		double *ub, int nNewPnt, int nNPar,
+		int *parlist, double *partial);
 	static int  CALLBACKTYPE Funcalcx(pLSmodel pModel, void    *pUserData,
 		int      nRow, double  *pdX,
 		int      nJDiff, double  dXJBase,
 		double   *pdFuncVal, int  *pReserved);
 
+	static void alg_funcq(const alglib::real_1d_array &qarr, double &func, alglib::real_1d_array &grad, void *ptr);
+	static void alg_funcx(const alglib::real_1d_array &xarr, alglib::real_1d_array &fi, void *ptr);
+	static void alg_fvecq(const alglib::real_1d_array &x, alglib::real_1d_array &fi, void *ptr);
+	static void alg_jacq(const alglib::real_1d_array &x, alglib::real_1d_array &fi, alglib::real_2d_array &jac, void *ptr);
+	static void alg_fvecx(const alglib::real_1d_array &x, alglib::real_1d_array &fi, void *ptr);
+
+	static void nonl_grad(const Eigen::Vector3d &n1, const Eigen::Vector3d &n2, Eigen::VectorXd &grad);
+	static void nonl_grad2(const Eigen::Vector3d &n1, const Eigen::Vector3d &n2, Eigen::VectorXd &grad);
+
+	void midaco_q_function(double *f, double *g, double *qarr);
+	void midaco_init_q_func(double *f, double *g, double *qarr);
+
 	void get_sparse_info(std::vector<int> &Abegcol, std::vector<int> &Alencol, std::vector<int> &Arowndx,
 		std::vector<double> &A);
 
+	void form_quadratic_coefficients(const Eigen::MatrixXd &Au, const Eigen::MatrixXd &Bu, const Eigen::MatrixXd &Cu,
+		Eigen::MatrixXd &QA);
+
 	double F_q_x(const Eigen::VectorXd &q, const Eigen::MatrixXd &x);
+
+	std::string constraints_to_string();
+	void get_alg_constraints(alglib::real_2d_array &constraints);
+	std::string matrix_to_string(const Eigen::MatrixXd &mat);
+	void print_constraints_func_values(const Eigen::VectorXd &q);
+	
+	//std::string matrix_to_string(const Eigen::VectorXd &vec);
 };

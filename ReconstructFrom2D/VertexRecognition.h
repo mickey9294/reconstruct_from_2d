@@ -25,6 +25,8 @@ public:
 	void get_precise_vertices(std::vector<int> &precise_vertices_id,
 		std::vector<QPointF> &precies_vertices, std::vector<std::vector<QLineF>> &line_segments);
 
+	bool get_precise_vertices(const QPointF &vertex, QPointF &precise_vertex);
+
 private:
 	QImage image_;
 	std::vector<QPointF> sketch_vertices_;

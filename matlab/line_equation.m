@@ -3,7 +3,7 @@ function [ line ] = line_equation( p, q )
 %   Detailed explanation goes here
 if abs(p(1) - q(1)) < 1.0e-8
     if abs(p(1)) > 1.0e-8
-        line = [-1.0/p(1); 0; 0];
+        line = [-1.0/p(1); 0; 1.0];
     else
         line = [1.0; 0; -p(1)];
     end

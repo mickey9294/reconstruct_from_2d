@@ -40,19 +40,19 @@ void VertexRecognition::get_precise_vertices(std::vector<int>& precise_vertices_
 		QPointF &sketch_vertex = sketch_vertices_[i];
 		int x_start, y_start, x_end, y_end;
 		if (sketch_vertex.x() > patch_size / 2)
-			x_start = (int)sketch_vertex.x() - patch_size / 2;
+			x_start = std::round(sketch_vertex.x()) - patch_size / 2;
 		else
 			x_start = 0;
 		if (sketch_vertex.y() > patch_size / 2)
-			y_start = sketch_vertex.y() - patch_size / 2;
+			y_start = std::round(sketch_vertex.y()) - patch_size / 2;
 		else
 			y_start = 0;
 		if (sketch_vertex.x() < image_.width() - patch_size / 2)
-			x_end = (int)sketch_vertex.x() + patch_size / 2;
+			x_end = std::round(sketch_vertex.x()) + patch_size / 2;
 		else
 			x_end = image_.width();
 		if (sketch_vertex.y() < image_.height() - patch_size / 2)
-			y_end = (int)sketch_vertex.y() + patch_size / 2;
+			y_end = std::round(sketch_vertex.y()) + patch_size / 2;
 		else
 			y_end = image_.height();
 
@@ -156,6 +156,103 @@ void VertexRecognition::get_precise_vertices(std::vector<int>& precise_vertices_
 	//	out << x1 << "," << y1 << "," << x2 << "," << y2 << std::endl;
 	//}
 	//out.close();
+}
+
+bool VertexRecognition::get_precise_vertices(const QPointF & sketch_vertex, QPointF & precise_vertex)
+{
+	assert(image_.width() > 0);
+	const int patch_size = 50;
+
+	int x_start, y_start, x_end, y_end;
+	if (sketch_vertex.x() > patch_size / 2)
+		x_start = std::round(sketch_vertex.x()) - patch_size / 2;
+	else
+		x_start = 0;
+	if (sketch_vertex.y() > patch_size / 2)
+		y_start = std::round(sketch_vertex.y()) - patch_size / 2;
+	else
+		y_start = 0;
+	if (sketch_vertex.x() < image_.width() - patch_size / 2)
+		x_end = std::round(sketch_vertex.x()) + patch_size / 2;
+	else
+		x_end = image_.width();
+	if (sketch_vertex.y() < image_.height() - patch_size / 2)
+		y_end = std::round(sketch_vertex.y()) + patch_size / 2;
+	else
+		y_end = image_.height();
+
+	/* Grab a patch around the sketch vertex */
+	image_double patch = new_image_double(x_end - x_start, y_end - y_start);
+	for (int x = 0; x + x_start < x_end; x++)
+	{
+		for (int y = 0; y_start + y < y_end; y++)
+		{
+			QRgb pixel = image_.pixel(x_start + x, y_start + y);
+			int gray = qRed(pixel);
+
+			patch->data[x + y * patch_size] = gray;
+		}
+	}
+	/* Detect line segments */
+	ntuple_list ntl = lsd(patch);
+
+	/* Extract line segments information */
+	std::vector<QLineF> lines(ntl->size);
+	for (int j = 0; j < ntl->size; j++)
+	{
+		double x1 = ntl->values[0 + j * ntl->dim] + x_start;
+		double y1 = ntl->values[1 + j * ntl->dim] + y_start;
+		double x2 = ntl->values[2 + j * ntl->dim] + x_start;
+		double y2 = ntl->values[3 + j * ntl->dim] + y_start;
+		lines[j].setP1(QPointF(x1, y1));
+		lines[j].setP2(QPointF(x2, y2));
+	}
+
+	precise_vertex.setX(0);
+	precise_vertex.setY(0);
+	double min_dist = std::numeric_limits<double>::max();
+	int count = 0;
+	for (int j = 0; j < lines.size(); j++)
+	{
+		QLineF &line1 = lines[j];
+		for (int k = j + 1; k < lines.size(); k++)
+		{
+			QLineF &line2 = lines[k];
+
+			QPointF intersect_point;
+			QLineF::IntersectType intersect_type = line1.intersect(line2, &intersect_point);
+			if (intersect_type == QLineF::UnboundedIntersection)
+			{
+				if (min_lines_dist(line1, line2, intersect_point) <= 4.0)
+				{
+					double dist = distance(intersect_point, sketch_vertex);
+					if (dist <= 4.0)
+					{
+						if (dist < min_dist)
+							precise_vertex = intersect_point;
+						count++;
+					}
+				}
+			}
+			else if (intersect_type == QLineF::BoundedIntersection)
+			{
+				double dist = distance(intersect_point, sketch_vertex);
+				if (dist <= 4.0)
+				{
+					if (dist < min_dist)
+						precise_vertex = intersect_point;
+					count++;
+				}
+			}
+		}
+	}
+	if (count == 0)
+	{
+		precise_vertex = sketch_vertex;
+		return false;
+	}
+	else
+		return true;
 }
 
 double VertexRecognition::distance(const QPointF & p1, const QPointF & p2)

@@ -18,6 +18,10 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	vertex_pen_.setColor(QColor(255, 0, 0));
 	vertex_brush_.setColor(QColor(255, 0, 0));
 	vertex_brush_.setStyle(Qt::SolidPattern);
+	precise_pen_.setColor(QColor(255, 153, 0));
+	precise_pen_.setWidth(1);
+	precise_brush_.setColor(QColor(255, 153, 0));
+	precise_brush_.setStyle(Qt::SolidPattern);
 
 	focus_pen_.setWidth(4);
 	focus_pen_.setColor(QColor(0, 255, 255));
@@ -42,6 +46,8 @@ MarkGraphicsScene::MarkGraphicsScene(QWidget *parent)
 	focused_line_id_ = -1;
 
 	this->setScene(graphics_scene_.get());
+
+	recognition_.reset(new VertexRecognition());
 }
 
 MarkGraphicsScene::~MarkGraphicsScene()
@@ -139,10 +145,6 @@ void MarkGraphicsScene::update_scene(const std::vector<Eigen::Vector2d>& refined
 void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id, const std::vector<QPointF>& precise_vertices)
 {
 	/* update vertices */
-	QPen precise_pen;
-	precise_pen.setColor(QColor(255, 153, 0));
-	precise_pen.setWidth(1);
-	QBrush precise_brush(QColor(255, 153, 0), Qt::SolidPattern);
 
 	/* reset colors of all vertices */
 	if (!precise_verts_id_.empty())
@@ -170,8 +172,8 @@ void MarkGraphicsScene::set_precise_vertices(const std::vector<int>& precise_id,
 		vert_it->setX(precise_vert.x());
 		vert_it->setY(precise_vert.y());
 		(*vert_item_it)->setRect(precise_vert.x() - 4, precise_vert.y() - 4, 8, 8);
-		(*vert_item_it)->setPen(precise_pen);
-		(*vert_item_it)->setBrush(precise_brush);
+		(*vert_item_it)->setPen(precise_pen_);
+		(*vert_item_it)->setBrush(precise_brush_);
 	}
 
 	/* update edges */
@@ -211,6 +213,33 @@ void MarkGraphicsScene::set_line_segments(const std::vector<std::vector<QLineF>>
 std::vector<int>& MarkGraphicsScene::get_precises_vertices()
 {
 	return precise_verts_id_;
+}
+
+void MarkGraphicsScene::auto_connect()
+{
+	std::shared_ptr<VerticesConnector> connector(new VerticesConnector(image_, vertex_list_));
+	std::list<Line> auto_connected_lines;
+	connector->get_connection_lines(auto_connected_lines);
+
+	for (std::list<Line>::iterator edge_it = auto_connected_lines.begin();
+		edge_it != auto_connected_lines.end(); ++edge_it)
+	{
+		line_list_.push_back(*edge_it);
+
+		std::list<QPointF>::iterator it = vertex_list_.begin();
+		std::advance(it, edge_it->p1());
+		QPointF v1 = *it;
+		it = vertex_list_.begin();
+		std::advance(it, edge_it->p2());
+		QPointF v2 = *it;
+
+		QLineF line(v1, v2);
+		line_item_ = graphics_scene_->addLine(line, line_pen_);
+		line_item_->setZValue(0.7);
+		line_item_stack_.push_back(line_item_);
+		mode_stack_.push_back(1);
+	}
+	perm_ = true;
 }
 
 void MarkGraphicsScene::save_current_state()
@@ -431,6 +460,8 @@ void MarkGraphicsScene::set_image(QString image_path)
 		graphics_scene_->addItem(pixmap_item_.get());
 
 		reset();
+
+		recognition_->set_image(image_);
 	}
 }
 
@@ -575,6 +606,9 @@ void MarkGraphicsScene::reset()
 	current_parallel_group_.clear();
 
 	clear_line_segments();
+
+	precise_verts_id_.clear();
+	precise_stack_.clear();
 	
 	if (state_ == LabelParallel)
 		change_state();
@@ -595,9 +629,21 @@ void MarkGraphicsScene::mousePressEvent(QMouseEvent *event)
 		else if (event->button() == Qt::LeftButton)
 		{
 			mode_stack_.push_back(0);
-			vertex_->setX(event->pos().x());
-			vertex_->setY(event->pos().y());
-			vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 3, vertex_->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
+			QPointF precise_vertex;
+			bool is_precise = recognition_->get_precise_vertices(QPointF(event->pos().x(), event->pos().y()), precise_vertex);
+			vertex_->setX(precise_vertex.x());
+			vertex_->setY(precise_vertex.y());
+			if(is_precise)
+			{
+				vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 3, vertex_->y() - 3, 6, 6, precise_pen_, precise_brush_);
+				precise_verts_id_.push_back(vertex_list_.size());
+				precise_stack_.push_back(true);
+			}
+			else
+			{
+				vertex_item_ = graphics_scene_->addEllipse(vertex_->x() - 3, vertex_->y() - 3, 6, 6, vertex_pen_, vertex_brush_);
+				precise_stack_.push_back(false);
+			}
 			vertex_item_->setZValue(1.0);
 
 			QFont font;
@@ -903,6 +949,17 @@ void MarkGraphicsScene::undo()
 				QGraphicsTextItem * last_number_item = number_item_stack_.back();
 				number_item_stack_.pop_back();
 				graphics_scene_->removeItem(last_number_item);
+			}
+			if (!precise_stack_.empty())
+			{
+				bool is_last_vertex_precise = precise_stack_.back();
+				precise_stack_.pop_back();
+				if (is_last_vertex_precise)
+				{
+					std::vector<int>::iterator id_it = precise_verts_id_.begin();
+					id_it += precise_verts_id_.size() - 1;
+					precise_verts_id_.erase(id_it);
+				}
 			}
 		}
 

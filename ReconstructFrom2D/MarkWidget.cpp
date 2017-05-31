@@ -9,6 +9,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	reconButton_.reset(new QPushButton("Reconstruct From File"));
 	recognitionButton_.reset(new QPushButton("Recognize Precise Vertices"));
 	detectPlanesButton_.reset(new QPushButton("Detect Planes"));
+	connectButton_.reset(new QPushButton("Auto Connect"));
 	addConstraintsButton_.reset(new QPushButton("Add Constraints"));
 	state_label_.reset(new QLabel("Marking State"));
 	displayWidget_.reset(new MarkGraphicsScene());
@@ -34,6 +35,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	display_layout.reset(new QVBoxLayout());
 	undo_layout.reset(new QHBoxLayout());
 	undo_layout->addWidget(recognitionButton_.get());
+	undo_layout->addWidget(connectButton_.get());
 	undo_layout->addWidget(detectPlanesButton_.get());
 	undo_layout->addWidget(addConstraintsButton_.get());
 	undo_layout->addWidget(reconButton_.get());
@@ -63,6 +65,7 @@ MarkWidget::MarkWidget(QWidget *parent)
 	connect(this, SIGNAL(stop_labeling()), displayWidget_.get(), SLOT(finish_label_parallelism()));
 	connect(detectPlanesButton_.get(), SIGNAL(clicked()), this, SLOT(detect_planes()));
 	connect(displayWidget_.get(), SIGNAL(set_state_text(QString)), state_label_.get(), SLOT(setText(QString)));
+	connect(connectButton_.get(), SIGNAL(clicked()), displayWidget_.get(), SLOT(auto_connect()));
 }
 
 MarkWidget::~MarkWidget()
