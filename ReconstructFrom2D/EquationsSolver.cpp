@@ -646,26 +646,25 @@ bool EquationsSolver::lindo_solve(std::vector<Eigen::Vector2d> &refined_vertices
 
 void EquationsSolver::alg_solve_q()
 {
-	std::string qstr = "[";
-	std::string scale_str = "[0.001";
-	qstr += std::to_string(environment_->qi[0]);
-	for (int i = 1; i < environment_->qi.size(); i++)
+	alglib::real_1d_array qi;
+	alglib::real_1d_array scale;
+	qi.setlength(environment_->qi.size());
+	scale.setlength(qi.length());
+	for (int i = 0; i < environment_->qi.size(); i++)
 	{
-		qstr += "," + std::to_string(environment_->qi[i]);
-		scale_str += ",0.001";
+		qi[i] = environment_->qi[i];
+		scale[i] = 1.0e-4;
 	}
-	qstr += "]";
-	scale_str += "]";
 
-	alglib::real_1d_array qi = qstr.c_str();
-	alglib::real_2d_array c = constraints_to_string().c_str();
-	alglib::real_1d_array scale = scale_str.c_str();
+	alglib::real_2d_array c;
+	//std::string ct_str = "[0";
+	//for (int i = 1; i < c.rows(); i++)
+	//	ct_str += ",0";
+	//ct_str += "]";
+	alglib::integer_1d_array ct;
+	get_alg_constraints(c, ct);
+	//alglib::real_2d_array c_check = constraints_to_string().c_str();
 
-	std::string ct_str = "[0";
-	for (int i = 1; i < c.rows(); i++)
-		ct_str += ",0";
-	ct_str += "]";
-	alglib::integer_1d_array ct = ct_str.c_str();
 	alglib::minbleicstate state;
 	alglib::minbleicreport rep;
 
@@ -674,15 +673,15 @@ void EquationsSolver::alg_solve_q()
 	double epsx = 0;
 	alglib::ae_int_t maxits = 0;
 
-	std::cout << "qi start : 0";
-	for (int i = 0; i < qi.length(); i++)
-		std::cout << qi[i] << " ";
-	std::cout << std::endl;
+	//std::cout << "qi start :";
+	//for (int i = 0; i < qi.length(); i++)
+	//	std::cout << qi[i] << " ";
+	//std::cout << std::endl;
 	double func_val;
-	alglib::real_1d_array grad;
-	grad.setlength(qi.length());
-	alg_funcq(qi, func_val, grad, environment_);
-	print_constraints_func_values(environment_->qi);
+	//alglib::real_1d_array grad;
+	//grad.setlength(qi.length());
+	//alg_funcq(qi, func_val, grad, environment_);
+	//print_constraints_func_values(environment_->qi);
 
 	alglib::minbleiccreate(qi, state);
 	alglib::minbleicsetlc(state, c, ct);
@@ -695,8 +694,8 @@ void EquationsSolver::alg_solve_q()
 	for (int i = 0; i < environment_->qiplus1.size(); i++)
 		environment_->qiplus1[i] = qi[i];
 
-	func_val = simple_Funcalcq(environment_->qiplus1, environment_);
-	std::cout << "func_val = " << func_val << std::endl;
+	//func_val = simple_Funcalcq(environment_->qiplus1, environment_);
+	//std::cout << "funcq_val = " << func_val << std::endl;
 }
 
 void EquationsSolver::alg_solve_q_nc()
@@ -770,21 +769,32 @@ void EquationsSolver::alg_solve_x()
 	alglib::ae_int_t outerits = 5;
 	alglib::ae_int_t updatefreq = 10;
 	double rho = 10;
-	alglib::minnlcstate state;
-	alglib::minnlcreport rep;
-	
-	alglib::minnlccreatef(environment_->xi.rows() * 2, xi, diffstep, state);
-	alglib::minnlcsetalgoaul(state, rho, outerits);
-	alglib::minnlcsetcond(state, epsg, epsf, epsx, maxits);
-	alglib::minnlcsetscale(state, scale);
-	alglib::minnlcsetprecexactlowrank(state, updatefreq);
-	
-	alglib::minnlcsetnlc(state, 0, environment_->xi.rows());
+	alglib::minbleicstate state;
+	alglib::minbleicreport rep;
 
-	std::cout << "xi:" << std::endl;
-	std::cout << xi.tostring(5) << std::endl;
-	alglib::minnlcoptimize(state, alg_funcx, NULL, environment_);
-	alglib::minnlcresults(state, xi, rep);
+	alglib::real_1d_array lb, ub;
+	lb.setlength(xi.length());
+	ub.setlength(xi.length());
+	for (int i = 0; i < environment_->imprecise_vertices.size(); i++)
+	{
+		int vert_id = environment_->imprecise_vertices[i];
+		lb[2 * i] = environment_->verts_2d[vert_id][0] - 8.0;
+		ub[2 * i] = environment_->verts_2d[vert_id][0] + 8.0;
+		lb[2 * i + 1] = environment_->verts_2d[vert_id][1] - 8.0;
+		ub[2 * i + 1] = environment_->verts_2d[vert_id][1] + 8.0;
+	}
+	
+	alglib::minbleiccreatef(environment_->xi.rows() * 2, xi, diffstep, state);
+	alglib::minbleicsetscale(state, scale);
+	alglib::minbleicsetbc(state, lb, ub);
+	alglib::minbleicsetcond(state, epsg, epsf, epsx, maxits);
+	alglib::minbleicoptimize(state, alg_funcx, NULL, environment_);
+	alglib::minbleicresults(state, xi, rep);
+	int term_type = rep.terminationtype;
+
+	//std::cout << "xi:" << std::endl;
+	//std::cout << xi.tostring(5) << std::endl;
+
 
 	for (int i = 0; i < environment_->xiplus1.rows(); i++)
 	{
@@ -952,23 +962,28 @@ bool EquationsSolver::alg_solve(std::vector<Eigen::Vector2d>& refined_vertices, 
 	//	environment_->xiplus1(i, 1) = environment_->verts_2d[i][1];
 	//}
 	const Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", "\n");
-	std::ofstream out("..\\Ad.csv");
-	out << environment_->Ad.format(CSVFormat);
-	out.close();
-	out.open("..\\Bd.csv");
-	out << environment_->Bd.format(CSVFormat);
-	out.close();
-	out.open("..\\Cd.csv");
-	out << environment_->Cd.format(CSVFormat);
-	out.close();
+	//std::ofstream out("..\\Ad.csv");
+	//out << environment_->Ad.format(CSVFormat);
+	//out.close();
+	//out.open("..\\Bd.csv");
+	//out << environment_->Bd.format(CSVFormat);
+	//out.close();
+	//out.open("..\\Cd.csv");
+	//out << environment_->Cd.format(CSVFormat);
+	//out.close();
 
 
 	while (true)
 	{
 		form_unfix_constraints(environment_->Au, environment_->Bu, environment_->Cu,
 			environment_->xi, environment_);
+
 		alg_solve_q();
+		double fval = simple_Funcalcq(environment_->qiplus1, environment_);
+		std::cout << "Funcq_val = " << fval << std::endl;
 		alg_solve_x();
+		fval = simple_Funcalcx(environment_->xiplus1, environment_);
+		std::cout << "Funcx_val = " << fval << std::endl;
 
 		Eigen::MatrixXd full_x(environment_->verts_2d.size(), 2);
 		for (int i = 0; i < full_x.rows(); i++)
@@ -1017,6 +1032,18 @@ bool EquationsSolver::alg_solve(std::vector<Eigen::Vector2d>& refined_vertices, 
 	}*/
 
 	refined_q = environment_->qiplus1;
+	std::ofstream qout("..\\matlab\\qi_1.csv");
+	qout << environment_->qiplus1.format(CSVFormat);
+	qout.close();
+	std::ofstream out("..\\matlab\\Au.csv");
+	out << environment_->Au.format(CSVFormat);
+	out.close();
+	out.open("..\\matlab\\Bu.csv");
+	out << environment_->Bu.format(CSVFormat);
+	out.close();
+	out.open("..\\matlab\\Cu.csv");
+	out << environment_->Cu.format(CSVFormat);
+	out.close();
 
 	return true;
 }
@@ -1356,6 +1383,9 @@ void EquationsSolver::form_unfix_constraints(Eigen::MatrixXd & Au, Eigen::Matrix
 		arma::cx_vec eigval;
 		arma::cx_mat eigvec;
 		arma::eig_gen(eigval, eigvec, arma_Si.t() * arma_Si);
+
+		//eigval.print("eigval: ");
+		//eigvec.print("eigvec: ");
 		
 		std::vector<double> evals(eigval.size());
 		std::vector<int> eval_idx(eigval.size());
@@ -1370,22 +1400,28 @@ void EquationsSolver::form_unfix_constraints(Eigen::MatrixXd & Au, Eigen::Matrix
 		int num_eig = eigval.size();
 		arma::cx_colvec hi = eigvec.col(eval_idx.front());
 		arma::mat33 Hi;
-		Eigen::Matrix3d H;
+		//Eigen::Matrix3d H;
 		for (int j = 0; j < 3; j++)
 		{
 			for (int t = 0; t < 3; t++)
 			{
 				Hi(j, t) = hi[3 * j + t].real();
-				H(j, t) = hi[3 * j + t].real();
+				//H(j, t) = hi[3 * j + t].real();
 			}
 		}
+
+		//Hi.print("Hi: ");
 
 		arma::cx_vec heval;
 		arma::cx_mat hevec;
 		arma::eig_gen(heval, hevec, Hi);
+
+		//heval.print("heval: ");
+		//hevec.print("hevec: ");
+
 		Eigen::Vector3d psx, psl_p1, psl_p2;
-		if (std::abs(heval[2].real() - heval[3].real()) < std::abs(heval[2].real() - heval[1].real()) &&
-			std::abs(heval[2].real() - heval[3].real()) < std::abs(heval[3].real() - heval[1].real()))
+		if (std::abs(heval[1].real() - heval[2].real()) < std::abs(heval[1].real() - heval[0].real()) &&
+			std::abs(heval[1].real() - heval[2].real()) < std::abs(heval[2].real() - heval[0].real()))
 		{
 			for (int j = 0; j < 3; j++)
 			{
@@ -1394,8 +1430,8 @@ void EquationsSolver::form_unfix_constraints(Eigen::MatrixXd & Au, Eigen::Matrix
 				psl_p2[j] = hevec(j, 2).real();
 			}
 		}
-		else if (std::abs(heval[1].real() - heval[3].real()) < std::abs(heval[2].real() - heval[1].real()) &&
-			std::abs(heval[1].real() - heval[3].real()) < std::abs(heval[3].real() - heval[2].real()))
+		else if (std::abs(heval[0].real() - heval[2].real()) < std::abs(heval[1].real() - heval[0].real()) &&
+			std::abs(heval[0].real() - heval[2].real()) < std::abs(heval[2].real() - heval[1].real()))
 		{
 			for (int j = 0; j < 3; j++)
 			{
@@ -1592,8 +1628,8 @@ void EquationsSolver::form_constraints(Eigen::MatrixXd & Au, Eigen::MatrixXd & B
 		arma::cx_mat hevec;
 		arma::eig_gen(heval, hevec, Hi);
 		Eigen::Vector3d psx, psl_p1, psl_p2;
-		if (std::abs(heval[2].real() - heval[3].real()) < std::abs(heval[2].real() - heval[1].real()) &&
-			std::abs(heval[2].real() - heval[3].real()) < std::abs(heval[3].real() - heval[1].real()))
+		if (std::abs(heval[1].real() - heval[2].real()) < std::abs(heval[1].real() - heval[0].real()) &&
+			std::abs(heval[1].real() - heval[2].real()) < std::abs(heval[2].real() - heval[0].real()))
 		{
 			for (int j = 0; j < 3; j++)
 			{
@@ -1602,8 +1638,8 @@ void EquationsSolver::form_constraints(Eigen::MatrixXd & Au, Eigen::MatrixXd & B
 				psl_p2[j] = hevec(j, 2).real();
 			}
 		}
-		else if (std::abs(heval[1].real() - heval[3].real()) < std::abs(heval[2].real() - heval[1].real()) &&
-			std::abs(heval[1].real() - heval[3].real()) < std::abs(heval[3].real() - heval[2].real()))
+		else if (std::abs(heval[0].real() - heval[2].real()) < std::abs(heval[1].real() - heval[0].real()) &&
+			std::abs(heval[0].real() - heval[2].real()) < std::abs(heval[2].real() - heval[1].real()))
 		{
 			for (int j = 0; j < 3; j++)
 			{
@@ -1971,6 +2007,19 @@ double EquationsSolver::simple_Funcalcq(const alglib::real_1d_array & qarr, Cons
 	return fq;
 }
 
+double EquationsSolver::simple_Funcalcx(const Eigen::MatrixXd & x, ConstraintsEnvironment * cons_env)
+{
+	Eigen::MatrixXd Au, Bu, Cu;
+	form_unfix_constraints(Au, Bu, Cu, x, cons_env);
+
+	double fx = 0;
+	fx += (Au * cons_env->qiplus1).squaredNorm();
+	fx += (Bu * cons_env->qiplus1).squaredNorm();
+	fx += (Cu * cons_env->qiplus1).squaredNorm();
+
+	return fx;
+}
+
 double EquationsSolver::simple_Funcalcx(const alglib::real_1d_array & xarr, ConstraintsEnvironment * cons_env)
 {
 	Eigen::MatrixXd x(xarr.length() / 2, 2);
@@ -2143,7 +2192,7 @@ void EquationsSolver::alg_funcq(const alglib::real_1d_array & qarr, double & fun
 	}
 	func += gsum;
 
-	std::cout << "funcq = " << func << std::endl;
+	//std::cout << "funcq = " << func << std::endl;
 	for (int i = 0; i < 3 * Nf; i++)
 	{
 		grad[i] += 2 * cons_env->Au.col(i).transpose() * (cons_env->Au * q);
@@ -2152,13 +2201,13 @@ void EquationsSolver::alg_funcq(const alglib::real_1d_array & qarr, double & fun
 	}
 }
 
-void EquationsSolver::alg_funcx(const alglib::real_1d_array & xarr, alglib::real_1d_array & fi, void * ptr)
+void EquationsSolver::alg_funcx(const alglib::real_1d_array &xarr, double &fx, void *ptr)
 {
 	//std::cout << "xarr:" << std::endl;
 	//std::cout << xarr.tostring(5) << std::endl;
 	ConstraintsEnvironment *cons_env = (ConstraintsEnvironment *)ptr;
 
-	double fx = 0;
+	fx = 0;
 	Eigen::MatrixXd xi(cons_env->xi.rows(), 2);
 	for (int i = 0; i < xi.rows(); i++)
 	{
@@ -2179,14 +2228,6 @@ void EquationsSolver::alg_funcx(const alglib::real_1d_array & xarr, alglib::real
 		std::cout << "Bu:\n" << Bu << std::endl;
 		std::cout << "Cu:\n" << Cu << std::endl;
 		std::cout << "qi+1: " << cons_env->qiplus1.transpose() << std::endl;
-	}
-	fi[0] = fx;
-
-	for (int i = 0; i < xi.rows(); i++)
-	{
-		int vert_id = cons_env->imprecise_vertices[i];
-		Eigen::Vector2d &x0 = cons_env->verts_2d[vert_id];
-		fi[1 + i] = (x0 - xi.row(i).transpose()).squaredNorm() - NEIGHBORHOOD;
 	}
 }
 
@@ -2594,10 +2635,12 @@ std::string EquationsSolver::constraints_to_string()
 	return res;
 }
 
-void EquationsSolver::get_alg_constraints(alglib::real_2d_array & constraints)
+void EquationsSolver::get_alg_constraints(alglib::real_2d_array & constraints, alglib::integer_1d_array &type)
 {
 	int Nf = environment_->faces.size();
-	constraints.setlength(num_constraints_rows() * 2, 3 * Nf + 1);
+	int num_constraints = num_constraints_rows() * 2;
+	constraints.setlength(num_constraints, 3 * Nf + 1);
+	type.setlength(num_constraints);
 
 	const double threshold = 0.1;
 	int idx = 0;
@@ -2609,34 +2652,40 @@ void EquationsSolver::get_alg_constraints(alglib::real_2d_array & constraints)
 			constraints[2 * idx][j] = environment_->Ad(i, j);
 			constraints[2 * idx + 1][j] = environment_->Ad(i, j);
 		}
-		constraints[2 * idx][j] = -threshold;
-		constraints[2 * idx + 1][j] = threshold;
+		constraints[2 * idx][j] = threshold;
+		constraints[2 * idx + 1][j] = -threshold;
+		type[2 * idx] = -1;
+		type[2 * idx + 1] = 1;
 		idx++;
 	}
 
 	for (int i = 0; i < environment_->Bd.rows(); i++)
 	{
 		int j;
-		for (int j = 0; j < 3 * Nf; j++)
+		for (j = 0; j < 3 * Nf; j++)
 		{
 			constraints[2 * idx][j] = environment_->Bd(i, j);
 			constraints[2 * idx + 1][j] = environment_->Bd(i, j);
 		}
-		constraints[2 * idx][j] = -threshold;
-		constraints[2 * idx + 1][j] = threshold;
+		constraints[2 * idx][j] = threshold;
+		constraints[2 * idx + 1][j] = -threshold;
+		type[2 * idx] = -1;
+		type[2 * idx + 1] = 1;
 		idx++;
 	}
 
 	for (int i = 0; i < environment_->Cd.rows(); i++)
 	{
 		int j;
-		for (int j = 0; j < 3 * Nf; j++)
+		for (j = 0; j < 3 * Nf; j++)
 		{
 			constraints[2 * idx][j] = environment_->Cd(i, j);
 			constraints[2 * idx + 1][j] = environment_->Cd(i, j);
 		}
-		constraints[2 * idx][j] = -threshold;
-		constraints[2 * idx + 1][j] = threshold;
+		constraints[2 * idx][j] = threshold;
+		constraints[2 * idx + 1][j] = -threshold;
+		type[2 * idx] = -1;
+		type[2 * idx + 1] = 1;
 		idx++;
 	}
 
@@ -2646,8 +2695,64 @@ void EquationsSolver::get_alg_constraints(alglib::real_2d_array & constraints)
 		constraints[2 * idx][j] = environment_->E(0, j);
 		constraints[2 * idx + 1][j] = environment_->E(0, j);
 	}
-	constraints[2 * idx][j] = -FIXED_DEPTH - threshold;
-	constraints[2 * idx + 1][j] = -FIXED_DEPTH + threshold;
+	constraints[2 * idx][j] = FIXED_DEPTH + threshold;
+	constraints[2 * idx + 1][j] = FIXED_DEPTH - threshold;
+	type[2 * idx] = -1;
+	type[2 * idx + 1] = 1;
+}
+
+void EquationsSolver::
+get_alg_strict_constraints(alglib::real_2d_array & constraints, alglib::integer_1d_array & type)
+{
+	int Nf = environment_->faces.size();
+	int num_constraints = num_constraints_rows();
+	constraints.setlength(num_constraints, 3 * Nf + 1);
+	type.setlength(num_constraints);
+
+	int idx = 0;
+	for (int i = 0; i < environment_->Ad.rows(); i++)
+	{
+		int j;
+		for (j = 0; j < 3 * Nf; j++)
+		{
+			constraints[idx][j] = environment_->Ad(i, j);
+		}
+		constraints[idx][j] = 0;
+		type[idx] = 0;
+		idx++;
+	}
+
+	for (int i = 0; i < environment_->Bd.rows(); i++)
+	{
+		int j;
+		for (j = 0; j < 3 * Nf; j++)
+		{
+			constraints[idx][j] = environment_->Bd(i, j);
+		}
+		constraints[idx][j] = 0;
+		type[idx] = 0;
+		idx++;
+	}
+
+	for (int i = 0; i < environment_->Cd.rows(); i++)
+	{
+		int j;
+		for (j = 0; j < 3 * Nf; j++)
+		{
+			constraints[idx][j] = environment_->Cd(i, j);
+		}
+		constraints[idx][j] = 0;
+		type[idx] = 0;
+		idx++;
+	}
+
+	int j;
+	for (j = 0; j < 3 * Nf; j++)
+	{
+		constraints[idx][j] = environment_->E(0, j);
+	}
+	constraints[idx][j] = FIXED_DEPTH;
+	type[idx] = 0;
 }
 
 std::string EquationsSolver::matrix_to_string(const Eigen::MatrixXd & mat)

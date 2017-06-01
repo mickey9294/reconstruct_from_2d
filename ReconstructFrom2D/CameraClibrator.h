@@ -34,5 +34,6 @@ private:
 	int height_;
 
 	Eigen::Vector3d get_line_equation(int line_id);
+	double point_line_distance(const Eigen::Vector3d &line, const Eigen::Vector2d &point);
 };
 

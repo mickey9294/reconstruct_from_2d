@@ -85,6 +85,11 @@ void CameraClibrator::calibrate(double & focal_length, Eigen::Vector2d & primary
 	if (parallel_groups_.size() < 2)
 		return;
 
+	/* Get the equations of all lines */
+	std::vector<Eigen::Vector3d> line_equations(lines_.size());
+	for (int i = 0; i < lines_.size(); i++)
+		line_equations[i] = get_line_equation(i);
+
 	std::vector<Eigen::Vector3d> vp_list;
 
 	for (std::vector<std::vector<int>>::iterator group_it = parallel_groups_.begin();
@@ -95,32 +100,44 @@ void CameraClibrator::calibrate(double & focal_length, Eigen::Vector2d & primary
 
 		Eigen::Vector3d vanishing_point;
 		vanishing_point.setZero();
-		int vp_count = 0;
+		//int vp_count = 0;
+		double min_sum_dist = std::numeric_limits<double>::max();
 
 		for (int i = 0; i < group_it->size(); i++)
 		{
+			/* Pick the first line from the current parallel group */
 			int line_id_1 = group_it->operator[](i);
-			Eigen::Vector3d line_1 = get_line_equation(line_id_1);
+			Eigen::Vector3d &line_1 = line_equations[line_id_1];
 
 			for (int j = i + 1; j < group_it->size(); j++)
 			{
+				/* Pick the second line from the current parallel group */
 				int line_id_2 = group_it->operator[](j);
+				Eigen::Vector3d &line_2 = line_equations[line_id_2];
 
-				Eigen::Vector3d line_2 = get_line_equation(line_id_2);
-
+				/* Compute a vanishing point from these two parallel lines */
 				Eigen::Vector3d vp = line_1.cross(line_2);
 				assert(std::abs(vp[2]) > 1e-10);
 
-				vp[0] /= vp[2];
-				vp[1] /= vp[2];
-				vp[2] = 1.0;
+				vp /= vp[2];
 
-				vanishing_point += vp;
-				vp_count++;
+				/* Sum the distances from the vanishing points to all the lines in the parallel group */
+				double sum_dist = 0;
+				for (int k = 0; k < group_it->size(); k++)
+				{
+					Eigen::Vector3d &line = line_equations[group_it->operator[](k)];
+					double dist = point_line_distance(line, vp.head(2));
+					sum_dist += dist;
+				}
+				/* Check whether the current vp is the most plausible one */
+				if (sum_dist < min_sum_dist)
+				{
+					min_sum_dist = sum_dist;
+					vanishing_point = vp;
+				}
 			}
 		}
 
-		vanishing_point /= (double)vp_count;
 		vp_list.push_back(vanishing_point);
 	}
 
@@ -175,4 +192,11 @@ Eigen::Vector3d CameraClibrator::get_line_equation(int line_id)
 	}
 
 	return Eigen::Vector3d(a, b, c);
+}
+
+double CameraClibrator::point_line_distance(const Eigen::Vector3d & line, const Eigen::Vector2d & point)
+{
+	double dist = abs(line[0] * point[0] + line[1] * point[1] + line[2])
+		/ std::sqrt(std::pow(line[0], 2) + std::pow(line[1], 2));
+	return dist;
 }

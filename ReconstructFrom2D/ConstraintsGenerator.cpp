@@ -965,61 +965,61 @@ bool ConstraintsGenerator::run_solver(std::vector<Eigen::Vector2d> &refined_vert
 	if (!equations_solver_)
 		equations_solver_.reset(new EquationsSolver(image_name_));
 
-	equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
+	//equations_solver_->solve(faces_.size(), vertices_.size(), refined_vertices, refined_q);
 
-	//int precise_vert = -1;
-	//int precise_idx;
-	//if (!precise_vertices_id_.empty())
-	//{
-	//	precise_vert = precise_vertices_id_[0];
-	//	precise_idx = 1;
-	//}
-	//std::vector<int> imprecise_vertices(vertices_.size() - precise_vertices_id_.size());
-	//int idx = 0;
-	//for (int i = 0; i < vertices_.size(); i++)
-	//{
-	//	if (precise_vert < 0 || i != precise_vert)
-	//		imprecise_vertices[idx++] = i;
-	//	else if(precise_idx >= 0 && precise_idx < precise_vertices_id_.size())
-	//		precise_vert = precise_vertices_id_[precise_idx++];
-	//}
+	int precise_vert = -1;
+	int precise_idx;
+	if (!precise_vertices_id_.empty())
+	{
+		precise_vert = precise_vertices_id_[0];
+		precise_idx = 1;
+	}
+	std::vector<int> imprecise_vertices(vertices_.size() - precise_vertices_id_.size());
+	int idx = 0;
+	for (int i = 0; i < vertices_.size(); i++)
+	{
+		if (precise_vert < 0 || i != precise_vert)
+			imprecise_vertices[idx++] = i;
+		else if(precise_idx >= 0 && precise_idx < precise_vertices_id_.size())
+			precise_vert = precise_vertices_id_[precise_idx++];
+	}
 
-	//std::vector<int> precise_sym_faces;
-	//std::ifstream in("..\\matlab\\precise_sym_faces.csv");
-	//if (in.is_open())
-	//{
-	//	std::string line;
-	//	while (!in.eof())
-	//	{
-	//		std::getline(in, line);
-	//		if (line.length() > 0)
-	//			precise_sym_faces.push_back(std::stoi(line) - 1);
-	//	}
-	//	precise_sym_faces.shrink_to_fit();
+	std::vector<int> precise_sym_faces;
+	std::ifstream in("..\\matlab\\precise_sym_faces.csv");
+	if (in.is_open())
+	{
+		std::string line;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+				precise_sym_faces.push_back(std::stoi(line) - 1);
+		}
+		precise_sym_faces.shrink_to_fit();
 
-	//	in.close();
-	//}
+		in.close();
+	}
 
-	//std::vector<int> perspective_syms;
-	//in.open("..\\matlab\\perspective_syms.txt");
-	//if (in.is_open())
-	//{
-	//	std::string line;
-	//	while (!in.eof())
-	//	{
-	//		std::getline(in, line);
-	//		if (line.length() > 0)
-	//			perspective_syms.push_back(std::stoi(line) - 1);
-	//	}
-	//	perspective_syms.shrink_to_fit();
+	std::vector<int> perspective_syms;
+	in.open("..\\matlab\\perspective_syms.txt");
+	if (in.is_open())
+	{
+		std::string line;
+		while (!in.eof())
+		{
+			std::getline(in, line);
+			if (line.length() > 0)
+				perspective_syms.push_back(std::stoi(line) - 1);
+		}
+		perspective_syms.shrink_to_fit();
 
-	//	in.close();
-	//}
+		in.close();
+	}
 
-	//equations_solver_->set_constraints_environment(A_, B_, C_, E_, G_, Ad_, Bd_, Cd_,
-	//	vertices_, edges_, faces_, vert_to_face_map_, imprecise_vertices,
-	//	precise_sym_faces, perspective_syms, lines_parallel_to_faces_, focal_length_);
-	//bool ret = equations_solver_->alg_solve(refined_vertices, refined_q);
+	equations_solver_->set_constraints_environment(A_, B_, C_, E_, G_, Ad_, Bd_, Cd_,
+		vertices_, edges_, faces_, vert_to_face_map_, imprecise_vertices,
+		precise_sym_faces, perspective_syms, lines_parallel_to_faces_, focal_length_);
+	bool ret = equations_solver_->alg_solve(refined_vertices, refined_q);
 
 	return true;
 }

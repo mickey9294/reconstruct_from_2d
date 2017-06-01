@@ -43,29 +43,18 @@
 % end
 
 
-% R = rotx(180);
-% plotCamera('Location', [0,0,0], 'Orientation', R, 'Size', 60, 'Color', 'b', 'Label', '2', 'Opacity', 0);
-% 
-q = load('..\q_test.csv');
+R = rotx(180);
+plotCamera('Location', [0,0,0], 'Orientation', R, 'Size', 60, 'Color', 'b', 'Label', '2', 'Opacity', 0);
+
+q = load('qi_1.csv');
 Q = reshape(q, 3, length(q)/3);
 for i = 1: size(Q, 2)
     len = norm(Q(:,i));
-    Q(:,i) = Q(:,i) / len;
-end
-
-qgt = load('..\q_gt.csv');
-Qgt = reshape(qgt, 3, length(qgt) / 3);
-for i = 1: size(Qgt, 2)
-    len = norm(Qgt(:,i));
-    Qgt(:,i) = Qgt(:,i)/ len;
-end
+    Q
 
 figure
 axis equal
 hold on
 for i = 1:9
     plot3([0 Q(1,i)], [0 Q(2,i)], [0 Q(3,i)]);
-    plot3([0.2 Qgt(1,i)], [0.2 Qgt(2,i)], [0.2 Qgt(3,i)]);
 end
-
-

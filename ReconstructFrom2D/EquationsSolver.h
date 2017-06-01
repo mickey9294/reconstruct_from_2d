@@ -131,6 +131,7 @@ private:
 		double   *pdFuncVal, int  *pReserved);
 	static double simple_Funcalcq(const Eigen::VectorXd &q, ConstraintsEnvironment *cons_env);
 	static double simple_Funcalcq(const alglib::real_1d_array &qarr, ConstraintsEnvironment *cons_env);
+	static double simple_Funcalcx(const Eigen::MatrixXd &xarr, ConstraintsEnvironment *cons_env);
 	static double simple_Funcalcx(const alglib::real_1d_array &xarr, ConstraintsEnvironment *cons_env);
 	static int CALLBACKTYPE Gradcalcq(pLSmodel pModel, void *pUserData,
 		int nRow, double *pdX, double *lb,
@@ -142,7 +143,7 @@ private:
 		double   *pdFuncVal, int  *pReserved);
 
 	static void alg_funcq(const alglib::real_1d_array &qarr, double &func, alglib::real_1d_array &grad, void *ptr);
-	static void alg_funcx(const alglib::real_1d_array &xarr, alglib::real_1d_array &fi, void *ptr);
+	static void alg_funcx(const alglib::real_1d_array &x, double &func, void *ptr);
 	static void alg_fvecq(const alglib::real_1d_array &x, alglib::real_1d_array &fi, void *ptr);
 	static void alg_jacq(const alglib::real_1d_array &x, alglib::real_1d_array &fi, alglib::real_2d_array &jac, void *ptr);
 	static void alg_fvecx(const alglib::real_1d_array &x, alglib::real_1d_array &fi, void *ptr);
@@ -162,7 +163,8 @@ private:
 	double F_q_x(const Eigen::VectorXd &q, const Eigen::MatrixXd &x);
 
 	std::string constraints_to_string();
-	void get_alg_constraints(alglib::real_2d_array &constraints);
+	void get_alg_constraints(alglib::real_2d_array &constraints, alglib::integer_1d_array &type);
+	void get_alg_strict_constraints(alglib::real_2d_array & constraints, alglib::integer_1d_array &type);
 	std::string matrix_to_string(const Eigen::MatrixXd &mat);
 	void print_constraints_func_values(const Eigen::VectorXd &q);
 	
